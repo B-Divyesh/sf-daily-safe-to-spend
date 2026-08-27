@@ -1,0 +1,17 @@
+{
+  "slug": "daily-safe-to-spend",
+  "title": "Today Money",
+  "territory": "utilities",
+  "user": "People who budget manually and do not want bank sync, but need a trustworthy answer to what can be spent today after upcoming obligations.",
+  "smallest_useful_product": "Offline PWA where a user enters current cash, mandatory future bills, and protected envelopes; it computes a conservative daily amount through the next payday and exposes assumptions.",
+  "non_goals": [
+    "Bank connections",
+    "Investment tracking",
+    "Credit scoring",
+    "Tax advice",
+    "Shared cloud accounts"
+  ],
+  "artifact_class": "pwa-offline",
+  "monetization": "one-time",
+  "constraints": "No financial advice or bank credential collection; calculations must be transparent and exportable; data stays on-device with optional encrypted backup; single-currency core."
+}
