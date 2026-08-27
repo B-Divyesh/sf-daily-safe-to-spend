@@ -1,4 +1,27 @@
-# Today Money v1 handoff
+# Today Money — independent verification handoff: **FAIL**
+
+Verification work order: `daily-safe-to-spend-verify-1`
+Verified candidate: `c08128d46c80e9896a951702f90ed9c2384fa539`
+Verified live URL: <https://daily-safe-to-spend.sociobot.in>
+Date: 2026-08-27
+
+**Do not release this candidate.** A semantically invalid but date-shaped JSON
+import is accepted, replaces the existing IndexedDB plan, and makes a reload
+land on “Your saved plan could not be opened. Invalid time value” with no
+in-product recovery path. See [the independent verification report](verification.md)
+for the exact file, reproduction, passing checks, live hash evidence, and
+required retest.
+
+The live HTML, service worker, manifest, JS, and CSS are hash-identical to the
+fresh production build of this candidate, so this is not a deployment-only
+failure. `npm ci`, `npm test` (4/4), `npm run build`, and `npm run test:e2e`
+(4/4) passed; normal desktop/mobile, axe, keyboard, reduced-motion, PWA
+offline reload, and service-worker-update-toast checks also passed. The P1
+invalid-import/data-loss defect controls this FAIL verdict.
+
+---
+
+# Builder handoff (superseded by independent verification above)
 
 Work order: `daily-safe-to-spend-build-1`
 Completed: 2026-08-27
