@@ -87,8 +87,9 @@ Evidence from a clean install on 2026-08-28:
 ## Deployment and remaining notes
 
 Deploy command: `npm run build`; artifact: static `dist/` with `index.html` at
-its root. Push the repair to `main` to trigger the factory static deployment;
-the live identity/hash check must be repeated after that deployment settles.
+its root. The factory worker's `static` deployment step uploads this artifact
+to `daily-safe-to-spend.sociobot.in`; the live identity/hash check must be
+repeated after that deployment settles.
 
 No behavior from the researched brief was removed. The remaining documented
 non-blocking hosting-header hardening is outside this repository's static
