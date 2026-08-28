@@ -1,6 +1,6 @@
 # Today Money copy audit
 
-Audited 2026-08-28 from the rendered landing page and `README.md` after polish round 4.
+Audited 2026-08-28 from the rendered landing page and `README.md` after polish round 5.
 
 Counting rule: whitespace-separated words count once. Hyphenated terms, prices, URLs, paths, and inline-code values each count as one word. Punctuation and decorative arrows do not count. The inventory includes directives, headings, labels, actions, prose, and sentence-like list items. No item exceeds 22 words or contains a banned marketing term.
 
@@ -55,7 +55,7 @@ Counting rule: whitespace-separated words count once. Hyphenated terms, prices, 
 | Built by Param Factory | 4 | Attribution |
 | Original generated illustration | 3 | Provenance disclosure |
 
-Short brand, navigation, and footer labels are also inventoried: “Today Money” (2), “DAILY SPENDING PLAN” (3), “Demo” (1), “Privacy” (1), “Terms” (1), “Install app” (2), and “Build 1.3.0-polish-3” (2). All pass.
+Short brand, navigation, and footer labels are also inventoried: “Today Money” (2), “DAILY SPENDING PLAN” (3), “Demo” (1), “Privacy” (1), “Terms” (1), “Install app” (2), and “Build 1.5.0-polish-5” (2). All pass.
 
 ## README sentences and list items
 
@@ -114,7 +114,7 @@ README headings contain 1–4 words and the code commands contain 2–4 tokens. 
 
 Repository search confirms “savings pot” no longer appears in product or README copy. `Envelope` remains an internal TypeScript model name only.
 
-## Round 4 demo and legal additions
+## Round 4 and 5 demo, legal, and offline additions
 
 | Visible text | Words | Result |
 | --- | ---: | --- |
@@ -124,8 +124,13 @@ Repository search confirms “savings pot” no longer appears in product or REA
 | The demo uses a separate browser database and temporary sample Plus access. | 12 | Registered by `demo-sandbox` |
 | It never reads, stores, or checks a license. | 8 | Registered by `demo-sandbox` |
 | Reset demo or Start for real clears the sample data. | 11 | Registered by `demo-sandbox` |
-| Calculate your daily spending amount after bills and protected money, without connecting a bank. | 14 | Catalog description; verb-first and under 120 characters |
+| Calculate a daily amount after bills and protected money without connecting a bank. | 12 | Catalog description; verb-first and under 120 characters |
 
 These additions have one idea per sentence, contain no banned marketing words,
 and use the established terms **sample data**, **protected money**, **plan**,
-and **license**. The catalog description is 96 characters including spaces.
+and **license**. The catalog description is 83 characters including spaces.
+
+The offline sentence remains “Works offline after your first visit.” It is now
+true without pointer or keyboard input: `@claim:offline-reload` starts a new
+browser context at `/demo`, waits for automatic worker activation, goes
+offline, and reloads the seeded `$60.00` plan.
