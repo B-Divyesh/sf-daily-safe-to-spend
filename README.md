@@ -59,7 +59,7 @@ Payday is not a spending day. An overdue unpaid bill stays included until you ma
 
 ## Data and deployment
 
-The real plan uses the `today-money` browser database. The demo uses `today-money-demo` and never reads the real plan.
+The real plan uses the `today-money` browser database. The demo uses `today-money-demo` and never reads the real plan or license.
 
 Serve `dist/` as a static site over HTTPS. The Param Factory manages deployment, DNS, and billing registration.
 

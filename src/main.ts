@@ -17,7 +17,7 @@ let installPrompt: BeforeInstallPromptEvent | null = null;
 let isDemo = false;
 
 const SITE_URL = "https://daily-safe-to-spend.sociobot.in";
-const BUILD_ID = "1.3.0-polish-3";
+const BUILD_ID = "1.4.0-polish-4";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -213,8 +213,17 @@ function renderHistory(current: BudgetState): string {
   return `<details class="history"><summary>Balance history (${current.history.length})</summary><ol>${current.history.slice(0, 12).map((entry) => `<li><time datetime="${entry.at}">${formatDateTime(entry.at)}</time><strong>${money(entry.balance, current.currency)}</strong></li>`).join("")}</ol></details>`;
 }
 
+function backupControls(): string {
+  return `<div class="backup-grid"><form id="encrypt-form"><label for="backup-password">Backup password <span>8+ characters</span></label><input id="backup-password" name="password" type="password" minlength="8" required autocomplete="new-password" /><button class="button button-primary" type="submit">Download encrypted backup</button></form><form id="decrypt-form"><label for="restore-password">Restore password</label><input id="restore-password" name="password" type="password" minlength="8" required autocomplete="current-password" /><label class="button button-outline file-button">Choose encrypted backup<input id="encrypted-file" type="file" accept="application/json,.tmbackup" required /></label><button class="button button-outline" type="submit">Restore encrypted backup</button></form></div>`;
+}
+
+function demoLicenseState(): LicenseState {
+  return { unlocked: true, checking: false, notice: "Sample Plus access ends when you reset or leave demo." };
+}
+
 function renderPlus(): string {
-  if (license.unlocked) return `<section class="plus-section is-unlocked" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">PLUS UNLOCKED</span><h2 id="plus-title">Encrypted portable backup</h2><p>Create a password-protected copy for another device. We never receive the file or password.</p></div><div class="backup-grid"><form id="encrypt-form"><label for="backup-password">Backup password <span>8+ characters</span></label><input id="backup-password" name="password" type="password" minlength="8" required autocomplete="new-password" /><button class="button button-primary" type="submit">Download encrypted backup</button></form><form id="decrypt-form"><label for="restore-password">Restore password</label><input id="restore-password" name="password" type="password" minlength="8" required autocomplete="current-password" /><label class="button button-outline file-button">Choose encrypted backup<input id="encrypted-file" type="file" accept="application/json,.tmbackup" required /></label><button class="button button-outline" type="submit">Restore encrypted backup</button></form></div><p class="license-note">${license.notice || "License verified for this device."}</p></section>`;
+  if (isDemo) return `<section class="plus-section is-unlocked demo-plus" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">SAMPLE PLUS MODE</span><h2 id="plus-title">Try encrypted backup with sample data</h2><p>This temporary sample access never reads, stores, or checks a license.</p></div>${backupControls()}<p class="license-note">${demoLicenseState().notice}</p></section>`;
+  if (license.unlocked) return `<section class="plus-section is-unlocked" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">PLUS UNLOCKED</span><h2 id="plus-title">Encrypted portable backup</h2><p>Create a password-protected copy for another device. We never receive the file or password.</p></div>${backupControls()}<p class="license-note">${license.notice || "License verified for this device."}</p></section>`;
   return `<section class="plus-section" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">PLANNED ONE-TIME PURCHASE</span><h2 id="plus-title">Take an encrypted copy with you</h2><p><strong>The planned Today Money Plus price is US$12 once.</strong> Add password-protected backup and restore across your own devices. The daily plan and ordinary downloads stay free.</p></div><div class="plus-actions"><p class="availability-note"><strong>Purchases are not open yet.</strong> Existing license holders can restore access below.</p><form id="license-form"><label for="license-token">Have a license? Paste it here</label><div class="inline-form"><input id="license-token" name="license" type="text" required autocomplete="off" spellcheck="false" /><button class="button button-outline" type="submit">Verify license</button></div></form></div><p class="license-note">${license.checking ? "Checking license…" : escapeHtml(license.notice)} <a href="/terms" data-route>Read the planned purchase terms</a>.</p></section>`;
 }
 
@@ -249,9 +258,9 @@ function legalView(kind: "privacy" | "terms"): void {
   const privacy = kind === "privacy";
   root.innerHTML = shell(`<main id="main" class="legal-view"><p class="eyebrow">${privacy ? "PRIVACY" : "TERMS"} SHEET / 2026-08-28</p><h1 tabindex="-1">${privacy ? "Your money stays yours" : "A planning tool, not financial advice"}</h1>${privacy ? `
     <p>Today Money works without an account, analytics, advertising, bank connection, or cloud budget storage.</p>
-    <h2>What this browser stores</h2><p>Your balance, payday, bills, protected money, and balance history stay in this browser. A Plus license is stored only after you provide one.</p>
+    <h2>What this browser stores</h2><p>Your balance, payday, bills, protected money, and balance history stay in this browser. A Plus license is stored only after you provide one in a real plan.</p>
     <h2>What leaves this device</h2><p>Your budget is not transmitted. Verifying an existing Plus license contacts Sociobot’s billing service. It sends the license, not your budget.</p>
-    <h2>Demo data</h2><p>The demo uses a separate browser database. Reset demo or Start for real clears that sample database.</p>
+    <h2>Demo data</h2><p>The demo uses a separate browser database and temporary sample Plus access. It never reads, stores, or checks a license. Reset demo or Start for real clears the sample data.</p>
     <h2>Exports and deletion</h2><p>Spreadsheet, backup, and encrypted backup files are created here. You choose where to save them. Erase local plan removes the budget.</p>
     <h2>Contact</h2><p>Email <a href="mailto:privacy@sociobot.in">privacy@sociobot.in</a> with privacy questions.</p>` : `
     <p>Today Money calculates a daily amount from figures you enter. It does not verify balances or provide financial, legal, tax, or investment advice.</p>
@@ -301,6 +310,7 @@ async function resetDemo(): Promise<void> {
   await clearBudget(true);
   state = demoBudget();
   await saveBudget(state, true);
+  license = demoLicenseState();
   dashboardView();
   showToast("Demo reset to its original sample plan.");
 }
@@ -480,7 +490,9 @@ async function decryptBackup(event: SubmitEvent): Promise<void> {
 }
 
 async function restoreLicense(event: SubmitEvent): Promise<void> {
-  event.preventDefault(); const token = String(new FormData(event.currentTarget as HTMLFormElement).get("license")).trim(); if (!token) return;
+  event.preventDefault();
+  if (isDemo) return showToast("Demo never checks or stores licenses. Start for real to restore one.", "error");
+  const token = String(new FormData(event.currentTarget as HTMLFormElement).get("license")).trim(); if (!token) return;
   storeLicense(token); license = { unlocked: false, checking: true, notice: "" }; dashboardView(); license = await verifyLicense(true); dashboardView(); showToast(license.notice || "License checked.", license.unlocked ? "success" : "error");
 }
 
@@ -541,6 +553,7 @@ function scheduleServiceWorker(): void {
 
 async function plannerView(demo: boolean): Promise<void> {
   isDemo = demo;
+  license = demo ? demoLicenseState() : cachedLicenseState();
   state = null;
   loadError = "";
   if (demo) setMeta("Demo — Today Money", "Try a $1,240 daily spending plan with sample bills and protected money.", "/demo");
@@ -566,15 +579,34 @@ async function renderRoute(moveFocus = false): Promise<void> {
   const wasDemo = isDemo;
   if (wasDemo && path !== "/demo" && !queryDemo) await clearBudget(true).catch(() => undefined);
   if (path === "/" && !queryDemo) await plannerView(false);
-  else if (path === "/demo" || (path === "/" && queryDemo)) await plannerView(true);
+  else if (path === "/demo" || (path === "/" && queryDemo)) { discardDemoLicenseFromUrl(); await plannerView(true); }
   else if (path === "/privacy") { isDemo = false; setMeta("Privacy — Today Money", "How Today Money stores budget data in this browser and handles Plus license checks.", "/privacy"); legalView("privacy"); }
   else if (path === "/terms") { isDemo = false; setMeta("Terms — Today Money", "Terms for the Today Money daily planner and one-time Plus purchase.", "/terms"); legalView("terms"); }
   else { isDemo = false; setMeta("Page not found — Today Money", "This Today Money page does not exist.", path); notFoundView(); }
   if (moveFocus) focusRouteHeading();
 }
 
+function locationIsDemo(): boolean {
+  const path = location.pathname.replace(/\/+$/, "") || "/";
+  return path === "/demo" || (path === "/" && new URL(location.href).searchParams.get("demo") === "1");
+}
+
+function discardDemoLicenseFromUrl(): void {
+  const url = new URL(location.href);
+  if (!url.searchParams.has("license")) return;
+  url.searchParams.delete("license");
+  history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
 async function init(): Promise<void> {
-  bindConnectivity(); captureLicenseFromUrl(); license = cachedLicenseState();
+  bindConnectivity();
+  if (locationIsDemo()) {
+    discardDemoLicenseFromUrl();
+    license = demoLicenseState();
+  } else {
+    captureLicenseFromUrl();
+    license = cachedLicenseState();
+  }
   window.addEventListener("popstate", () => void renderRoute(true));
   await renderRoute(false);
   scheduleServiceWorker();

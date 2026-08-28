@@ -1,6 +1,6 @@
 # Today Money copy audit
 
-Audited 2026-08-28 from the rendered landing page and `README.md` after polish round 3.
+Audited 2026-08-28 from the rendered landing page and `README.md` after polish round 4.
 
 Counting rule: whitespace-separated words count once. Hyphenated terms, prices, URLs, paths, and inline-code values each count as one word. Punctuation and decorative arrows do not count. The inventory includes directives, headings, labels, actions, prose, and sentence-like list items. No item exceeds 22 words or contains a banned marketing term.
 
@@ -92,7 +92,7 @@ Short brand, navigation, and footer labels are also inventoried: “Today Money�
 | Payday is not a spending day. | 6 | Registered claim |
 | An overdue unpaid bill stays included until you mark it paid. | 11 | Registered claim |
 | The real plan uses the `today-money` browser database. | 8 | Registered storage claim |
-| The demo uses `today-money-demo` and never reads the real plan. | 10 | Registered claims |
+| The demo uses `today-money-demo` and never reads the real plan or license. | 12 | Registered `demo-sandbox` and storage claims |
 | Serve `dist/` as a static site over HTTPS. | 8 | Maintainer directive |
 | The Param Factory manages deployment, DNS, and billing registration. | 9 | Operational statement |
 | Read the live Privacy and Terms pages. | 7 | Maintainer directive |
@@ -113,3 +113,19 @@ README headings contain 1–4 words and the code commands contain 2–4 tokens. 
 | Table download | spreadsheet file | — | CSV in visitor introductions |
 
 Repository search confirms “savings pot” no longer appears in product or README copy. `Envelope` remains an internal TypeScript model name only.
+
+## Round 4 demo and legal additions
+
+| Visible text | Words | Result |
+| --- | ---: | --- |
+| Try encrypted backup with sample data | 6 | Clear demo feature heading |
+| This temporary sample access never reads, stores, or checks a license. | 11 | Registered by `demo-sandbox` |
+| Sample Plus access ends when you reset or leave demo. | 10 | Registered by `demo-sandbox` |
+| The demo uses a separate browser database and temporary sample Plus access. | 12 | Registered by `demo-sandbox` |
+| It never reads, stores, or checks a license. | 8 | Registered by `demo-sandbox` |
+| Reset demo or Start for real clears the sample data. | 11 | Registered by `demo-sandbox` |
+| Calculate your daily spending amount after bills and protected money, without connecting a bank. | 14 | Catalog description; verb-first and under 120 characters |
+
+These additions have one idea per sentence, contain no banned marketing words,
+and use the established terms **sample data**, **protected money**, **plan**,
+and **license**. The catalog description is 96 characters including spaces.

@@ -180,7 +180,8 @@ input:focus, select:focus { border-color: var(--blue-900); outline: 3px solid #3
 .license-note a { color: var(--blue-900); }
 .backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .backup-grid .button { width: 100%; margin-top: 12px; }
-.backup-grid .file-button { color: var(--ink); border-color: #6b8496; }
+.plus-section .button-outline { color: var(--ink); border-color: #526879; background: #fffdf3; }
+.plus-section .button-outline:hover { color: var(--ink); border-color: var(--ink); background: #e6e0c9; }
 .danger-zone { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 28px; border-top: 1px solid var(--line); }
 .danger-zone h2 { margin-bottom: 4px; font-size: 1.4rem; }.danger-zone p { margin: 0; color: var(--chalk-muted); font-size: 1rem; }
 .landing-section { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 72px 0; border-top: 1px solid var(--blue-600); }

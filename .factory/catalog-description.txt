@@ -1,1 +1,1 @@
-Calculate what you can spend today after bills and protected money, without connecting a bank.
+Calculate your daily spending amount after bills and protected money, without connecting a bank.

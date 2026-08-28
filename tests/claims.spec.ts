@@ -36,6 +36,15 @@ async function cleanDemo(page: Page): Promise<void> {
   await expect(page.getByText("Demo — sample data, nothing is saved")).toBeVisible();
 }
 
+async function startRealPlan(page: Page, balance = "1240"): Promise<void> {
+  await page.getByRole("link", { name: "Start for real" }).click();
+  await expect(page.getByRole("heading", { name: "See what you can spend today" })).toBeVisible();
+  await page.getByLabel("Spendable cash right now").fill(balance);
+  await page.getByLabel("Next payday").fill(isoInDays(10));
+  await page.getByRole("button", { name: "Show my daily amount" }).click();
+  await expect(page.getByRole("heading", { name: "Your daily amount" })).toBeVisible();
+}
+
 test.beforeEach(async ({ page }) => cleanDemo(page));
 
 test("@claim:manual-plan @claim:daily-calculation shows the sample inputs and computed daily amount", async ({ page }) => {
@@ -113,11 +122,35 @@ test("@claim:json-import imports a valid backup inside demo storage", async ({ p
   await expect(page.locator(".measurements").getByText("$800.00", { exact: true }).first()).toBeVisible();
 });
 
-test("@claim:local-plan-storage @claim:demo-sandbox keeps real and demo plans separate, resets, and discards demo on exit", async ({ page }) => {
-  await page.getByRole("link", { name: "Start for real" }).click();
-  await page.getByLabel("Spendable cash right now").fill("333");
-  await page.getByLabel("Next payday").fill(isoInDays(3));
-  await page.getByRole("button", { name: "Show my daily amount" }).click();
+test("@claim:local-plan-storage @claim:demo-sandbox keeps every demo state isolated, resets it, and discards it on exit", async ({ page }) => {
+  const externalRequests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).origin !== "http://127.0.0.1:4173") externalRequests.push(request.url());
+  });
+  await page.goto("/?demo=1&license=must-not-store-in-demo");
+  await expect(page).not.toHaveURL(/license=/);
+  await expect(page.getByText("SAMPLE PLUS MODE", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Have a license? Paste it here")).toHaveCount(0);
+  expect(await page.evaluate((key) => localStorage.getItem(key), licenseKey)).toBeNull();
+  expect(await page.evaluate((key) => localStorage.getItem(key), verdictKey)).toBeNull();
+  await page.getByLabel("Backup password").fill("sample-only-password");
+  const sampleDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download encrypted backup" }).click();
+  expect(await (await sampleDownload).path()).not.toBeNull();
+  expect(externalRequests).toEqual([]);
+  expect(await page.evaluate((key) => localStorage.getItem(key), licenseKey)).toBeNull();
+  expect(await page.evaluate((key) => localStorage.getItem(key), verdictKey)).toBeNull();
+
+  await page.getByRole("button", { name: "Update balance" }).click();
+  await page.getByLabel("Spendable cash right now").fill("999");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.getByRole("button", { name: "Reset demo" }).first().click();
+  await expect(page.locator(".measurements").getByText("$1,240.00", { exact: true })).toBeVisible();
+  await expect(page.getByText("SAMPLE PLUS MODE", { exact: true })).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), licenseKey)).toBeNull();
+  expect(await page.evaluate((key) => localStorage.getItem(key), verdictKey)).toBeNull();
+
+  await startRealPlan(page, "333");
   await expect(page.locator(".measurements").getByText("$333.00", { exact: true }).first()).toBeVisible();
   await page.getByRole("link", { name: "Demo" }).click();
   await expect(page.locator(".measurements").getByText("$1,240.00", { exact: true })).toBeVisible();
@@ -136,6 +169,10 @@ test("@claim:local-plan-storage @claim:demo-sandbox keeps real and demo plans se
   await page.goto("/?demo=1");
   await expect(page).toHaveTitle("Demo — Today Money");
   await expect(page.getByText("Demo — sample data, nothing is saved")).toBeVisible();
+  await expect(page.getByText("SAMPLE PLUS MODE", { exact: true })).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), licenseKey)).toBeNull();
+  expect(await page.evaluate((key) => localStorage.getItem(key), verdictKey)).toBeNull();
+  expect(externalRequests).toEqual([]);
 });
 
 test("@claim:local-data @claim:no-bank-connection @claim:no-tracking @claim:no-account @claim:no-third-party-request keeps the full demo flow on-origin", async ({ page }) => {
@@ -189,13 +226,14 @@ test("@claim:core-free keeps the core workflow and ordinary exports free", async
     requests.push(route.request().url());
     await route.abort("blockedbyclient");
   });
+  await startRealPlan(page);
   await expect(page.getByText("PLUS UNLOCKED")).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem("sb_license:daily-safe-to-spend"))).toBeNull();
 
   await page.getByRole("button", { name: "Update balance" }).click();
   await page.getByLabel("Spendable cash right now").fill("1250");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.locator(".measurements").getByText("$1,250.00", { exact: true })).toBeVisible();
+  await expect(page.locator(".measurements").getByText("$1,250.00", { exact: true }).first()).toBeVisible();
   await page.getByLabel("Purchase amount").fill("40");
   await expect(page.getByText("Yes, it fits.")).toBeVisible();
 
@@ -220,6 +258,8 @@ test("@claim:license-restore verifies valid, invalid, failed, and offline cached
     if (response === "failure") return route.abort("connectionfailed");
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(licenseResponses[response]) });
   });
+
+  await startRealPlan(page);
 
   await page.getByLabel("Have a license? Paste it here").fill("recorded-invalid-license");
   await page.getByRole("button", { name: "Verify license" }).click();
@@ -260,25 +300,16 @@ test("@claim:license-restore verifies valid, invalid, failed, and offline cached
   expect(verificationRequests).toHaveLength(requestCountBeforeOffline);
 });
 
-async function unlockFixture(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    localStorage.setItem("sb_license:daily-safe-to-spend", "claim-fixture-license");
-    localStorage.setItem("sb_license:daily-safe-to-spend:verdict", JSON.stringify({ valid: true, checkedAt: Date.now() }));
-  });
-  await page.reload();
-  await expect(page.getByText("PLUS UNLOCKED", { exact: true })).toBeVisible();
-}
-
 async function newRestorePage(browser: Browser): Promise<{ page: Page; close: () => Promise<void> }> {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   await page.goto("/demo");
-  await unlockFixture(page);
+  await expect(page.getByText("SAMPLE PLUS MODE", { exact: true })).toBeVisible();
   return { page, close: () => context.close() };
 }
 
 test("@claim:encrypted-backup creates and restores an encrypted plan in a fresh context", async ({ page, browser }) => {
-  await unlockFixture(page);
+  await expect(page.getByText("SAMPLE PLUS MODE", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Update balance" }).click();
   await page.getByLabel("Spendable cash right now").fill("1350");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -333,6 +364,7 @@ test("@claim:encrypted-backup-local-privacy keeps the password, backup, and budg
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(licenseResponses.valid) });
   });
 
+  await startRealPlan(page);
   await page.getByLabel("Have a license? Paste it here").fill("privacy-fixture-license");
   await page.getByRole("button", { name: "Verify license" }).click();
   await expect(page.getByText("PLUS UNLOCKED", { exact: true })).toBeVisible();
@@ -340,7 +372,7 @@ test("@claim:encrypted-backup-local-privacy keeps the password, backup, and budg
   await page.getByRole("button", { name: "Update balance" }).click();
   await page.getByLabel("Spendable cash right now").fill("1375");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.locator(".measurements").getByText("$1,375.00", { exact: true })).toBeVisible();
+  await expect(page.locator(".measurements").getByText("$1,375.00", { exact: true }).first()).toBeVisible();
   await page.getByLabel("Backup password").fill("private-claim-password");
   const pending = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download encrypted backup" }).click();
@@ -359,7 +391,7 @@ test("@claim:encrypted-backup-local-privacy keeps the password, backup, and budg
   await page.locator("#encrypted-file").setInputFiles(backupPath!);
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Restore encrypted backup" }).click();
-  await expect(page.locator(".measurements").getByText("$1,375.00", { exact: true })).toBeVisible();
+  await expect(page.locator(".measurements").getByText("$1,375.00", { exact: true }).first()).toBeVisible();
 
   const external = requests.filter((request) => new URL(request.url).origin !== "http://127.0.0.1:4173");
   expect(external).toHaveLength(1);
