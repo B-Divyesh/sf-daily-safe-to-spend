@@ -192,14 +192,22 @@ test("@claim:local-data @claim:no-bank-connection @claim:no-tracking @claim:no-a
   await expect(page.getByRole("link", { name: /sign|log in|account/i })).toHaveCount(0);
 });
 
-test("@claim:offline-reload reloads the seeded demo without a connection", async ({ page, context }) => {
-  await page.keyboard.press("Tab");
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.reload();
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.getByText("Demo — sample data, nothing is saved")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "$60.00" })).toBeVisible();
+test("@claim:offline-reload reloads the seeded demo offline after a no-interaction first visit", async ({ browser }) => {
+  // This context has not visited any route. Do not use a keyboard or pointer
+  // before the worker becomes ready: it proves the precise landing promise.
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const freshPage = await context.newPage();
+  try {
+    await freshPage.goto("/demo");
+    await expect(freshPage.locator(".demo-banner")).toContainText("Demo — sample data, nothing is saved");
+    await freshPage.evaluate(() => navigator.serviceWorker.ready);
+    await context.setOffline(true);
+    await freshPage.reload();
+    await expect(freshPage.locator(".demo-banner")).toContainText("Demo — sample data, nothing is saved");
+    await expect(freshPage.getByRole("heading", { name: "$60.00" })).toBeVisible();
+  } finally {
+    await context.close();
+  }
 });
 
 test("@claim:installable-pwa ships a standalone manifest and active offline worker", async ({ page }) => {

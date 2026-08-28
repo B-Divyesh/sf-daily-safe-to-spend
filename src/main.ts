@@ -17,7 +17,7 @@ let installPrompt: BeforeInstallPromptEvent | null = null;
 let isDemo = false;
 
 const SITE_URL = "https://daily-safe-to-spend.sociobot.in";
-const BUILD_ID = "1.4.0-polish-4";
+const BUILD_ID = "1.5.0-polish-5";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -533,22 +533,11 @@ async function registerServiceWorker(): Promise<void> {
 }
 function showUpdate(registration: ServiceWorkerRegistration): void { showToast("A fresh drawing is ready.", "success", `<button id="apply-update" class="text-button">Update now</button>`); document.querySelector("#apply-update")?.addEventListener("click", () => registration.waiting?.postMessage({ type: "SKIP_WAITING" })); }
 
-function scheduleServiceWorker(): void {
-  let started = false;
-  let timer = 0;
-  const register = () => {
-    if (started) return;
-    started = true;
-    window.clearTimeout(timer);
-    registerServiceWorker().catch(() => showToast("Offline setup is temporarily unavailable.", "error"));
-  };
-  const arm = () => {
-    timer = window.setTimeout(register, 30_000);
-    window.addEventListener("pointerdown", register, { once: true, passive: true });
-    window.addEventListener("keydown", register, { once: true });
-  };
-  if (document.readyState === "complete") arm();
-  else window.addEventListener("load", arm, { once: true });
+function startServiceWorkerOnFirstLoad(): void {
+  // Offline is a first-visit promise, so registration cannot wait for input or
+  // an idle timeout. A later navigation is then controlled by the precached
+  // worker even if the connection has disappeared in the meantime.
+  void registerServiceWorker().catch(() => showToast("Offline setup is temporarily unavailable.", "error"));
 }
 
 async function plannerView(demo: boolean): Promise<void> {
@@ -600,6 +589,7 @@ function discardDemoLicenseFromUrl(): void {
 
 async function init(): Promise<void> {
   bindConnectivity();
+  startServiceWorkerOnFirstLoad();
   if (locationIsDemo()) {
     discardDemoLicenseFromUrl();
     license = demoLicenseState();
@@ -609,7 +599,6 @@ async function init(): Promise<void> {
   }
   window.addEventListener("popstate", () => void renderRoute(true));
   await renderRoute(false);
-  scheduleServiceWorker();
   if (!isDemo && state && localStorage.getItem("sb_license:daily-safe-to-spend")) { license = await verifyLicense(); dashboardView(); }
 }
 
