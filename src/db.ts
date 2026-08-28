@@ -1,4 +1,4 @@
-import type { BudgetState } from "./model";
+import { isBudgetState, type BudgetState } from "./model";
 
 const DB_NAME = "today-money";
 const STORE = "budget";
@@ -27,6 +27,7 @@ export async function loadBudget(): Promise<BudgetState | null> {
 }
 
 export async function saveBudget(state: BudgetState): Promise<void> {
+  if (!isBudgetState(state)) throw new Error("The plan contains invalid data and was not saved.");
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");

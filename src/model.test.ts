@@ -43,4 +43,15 @@ describe("safe-to-spend calculation", () => {
     expect(isBudgetState({ balance: 10 })).toBe(false);
     expect(isBudgetState(plan)).toBe(true);
   });
+
+  it("rejects date-shaped impossible calendar dates before an import can replace a plan", () => {
+    expect(isBudgetState({ ...plan, payday: "2026-13-01" })).toBe(false);
+    expect(isBudgetState({ ...plan, bills: [{ ...plan.bills[0], dueDate: "2026-02-30" }] })).toBe(false);
+  });
+
+  it("rejects invalid timestamps in plan and balance history", () => {
+    expect(isBudgetState({ ...plan, updatedAt: "not-a-date" })).toBe(false);
+    expect(isBudgetState({ ...plan, updatedAt: "2026-02-30T10:00:00.000Z" })).toBe(false);
+    expect(isBudgetState({ ...plan, history: [{ id: "snapshot", at: "2026-13-01T10:00:00.000Z", balance: 100 }] })).toBe(false);
+  });
 });

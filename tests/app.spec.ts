@@ -69,6 +69,81 @@ test("saved plan reloads while offline", async ({ page, context }) => {
   await expect(page.getByText(/\$60\.00/).first()).toBeVisible();
 });
 
+test("rejects semantic-date imports without replacing the saved local plan", async ({ page }) => {
+  await page.getByLabel("Spendable cash right now").fill("50");
+  await page.getByLabel("Next payday").fill(isoInDays(10));
+  await page.getByRole("button", { name: "Make my plan" }).click();
+  await expect(page.locator(".measurements").getByText("$50.00", { exact: true }).first()).toBeVisible();
+
+  let destructiveConfirmationShown = false;
+  page.on("dialog", (dialog) => {
+    destructiveConfirmationShown = true;
+    void dialog.dismiss();
+  });
+  await page.locator("#import-json").setInputFiles({
+    name: "invalid-calendar-plan.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({
+      version: 1,
+      balance: 10,
+      payday: "2026-13-01",
+      currency: "USD",
+      bills: [],
+      envelopes: [],
+      history: [],
+      updatedAt: "not-a-date",
+    })),
+  });
+
+  await expect(page.getByText("That file is not a valid Today Money plan.")).toBeVisible();
+  expect(destructiveConfirmationShown).toBe(false);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Your spending line" })).toBeVisible();
+  await expect(page.locator(".measurements").getByText("$50.00", { exact: true }).first()).toBeVisible();
+});
+
+test("offers a reset route for a legacy unreadable local plan", async ({ page }) => {
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open("today-money", 1);
+      request.onupgradeneeded = () => request.result.createObjectStore("budget");
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction("budget", "readwrite");
+        transaction.objectStore("budget").put({
+          version: 1, balance: 10, payday: "2026-13-01", currency: "USD",
+          bills: [], envelopes: [], history: [], updatedAt: "not-a-date",
+        }, "current");
+        transaction.oncomplete = () => { db.close(); resolve(); };
+        transaction.onerror = () => reject(transaction.error);
+      };
+    });
+  });
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Your saved plan could not be opened." })).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Clear this unreadable plan" }).click();
+  await expect(page.getByRole("heading", { name: "What can you safely spend today?" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "What can you safely spend today?" })).toBeVisible();
+});
+
+test("keyboard opens and closes a plan dialog without losing focus", async ({ page }) => {
+  await page.getByLabel("Spendable cash right now").fill("100");
+  await page.getByLabel("Next payday").fill(isoInDays(7));
+  await page.getByRole("button", { name: "Make my plan" }).click();
+
+  const addBill = page.getByRole("button", { name: "Add bill" }).first();
+  await addBill.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByLabel("Bill name")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(addBill).toBeFocused();
+});
+
 test("landing and legal pages have accessible document structure", async ({ page }) => {
   let results = await new AxeBuilder({ page }).analyze();
   expect(results.violations.filter((item) => ["serious", "critical"].includes(item.impact ?? ""))).toEqual([]);

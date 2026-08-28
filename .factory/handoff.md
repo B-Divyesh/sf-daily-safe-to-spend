@@ -1,27 +1,102 @@
-# Today Money — independent verification handoff: **FAIL**
+# Today Money — repair handoff: ready to deploy
 
-Verification work order: `daily-safe-to-spend-verify-1`
-Verified candidate: `c08128d46c80e9896a951702f90ed9c2384fa539`
-Verified live URL: <https://daily-safe-to-spend.sociobot.in>
-Date: 2026-08-27
+Work order: `daily-safe-to-spend-repair-1`
 
-**Do not release this candidate.** A semantically invalid but date-shaped JSON
-import is accepted, replaces the existing IndexedDB plan, and makes a reload
-land on “Your saved plan could not be opened. Invalid time value” with no
-in-product recovery path. See [the independent verification report](verification.md)
-for the exact file, reproduction, passing checks, live hash evidence, and
-required retest.
+Base / failed candidate: `b1bfdac0eec82c02024e950586bd80b3722ad31c` /
+`c08128d46c80e9896a951702f90ed9c2384fa539`
+Date: 2026-08-28
 
-The live HTML, service worker, manifest, JS, and CSS are hash-identical to the
-fresh production build of this candidate, so this is not a deployment-only
-failure. `npm ci`, `npm test` (4/4), `npm run build`, and `npm run test:e2e`
-(4/4) passed; normal desktop/mobile, axe, keyboard, reduced-motion, PWA
-offline reload, and service-worker-update-toast checks also passed. The P1
-invalid-import/data-loss defect controls this FAIL verdict.
+## Release-blocking repair
+
+The verifier's P1 import/data-loss case was reproduced with its exact JSON:
+`payday: "2026-13-01"` and `updatedAt: "not-a-date"` passed the old
+shape-only validator, replaced the IndexedDB plan, and then caused an invalid
+date render on reload.
+
+The import boundary now rejects impossible Gregorian dates (including bill due
+dates) and accepts timestamps only in the canonical, parseable
+`Date#toISOString()` UTC form used by Today Money exports. Balance-history
+timestamps are checked too. `saveBudget` independently rejects an invalid
+state before beginning an IndexedDB write, so a future caller cannot persist
+an unchecked object. Validation occurs before the destructive import
+confirmation and before the in-memory plan is replaced.
+
+For a record corrupted by an older build, the storage error screen now offers
+the confirmed **Clear this unreadable plan** recovery route. It clears only the
+local budget record and returns to onboarding, where the person can start over
+or import a valid backup.
+
+## Regression coverage
+
+- Unit coverage rejects `2026-13-01`, `2026-02-30`, arbitrary/rolled-over
+  `updatedAt` values, and invalid history timestamps; valid exported state is
+  still accepted.
+- Chromium coverage submits the verifier's semantic-invalid import, asserts no
+  destructive confirmation appears, and reloads to prove the original $50
+  IndexedDB plan remains intact.
+- Chromium coverage seeds a legacy unreadable IndexedDB record and proves the
+  new recovery action clears it through the UI and survives a reload.
+- The Playwright configuration now runs every browser scenario at both
+  390×844 and 1440×1000. A keyboard check covers Enter opening the Add bill
+  dialog, initial focus on its field, Escape closing it, and focus returning
+  to the triggering button.
+
+## How to run and verify
+
+```sh
+npm ci
+npm test
+npm run lint
+npm run build
+npm run test:e2e
+```
+
+Evidence from a clean install on 2026-08-28:
+
+- `npm ci` completed with `npm audit` reporting **0 vulnerabilities**.
+- `npm test`: **6/6** Vitest tests passed.
+- `npm run lint`: TypeScript `--noEmit` passed.
+- `npm run build`: passed and created `dist/index.html`; initial JS is
+  **32.33 KB** (**10.59 KB gzip**) and CSS is **16.85 KB** (**4.57 KB gzip**),
+  well within the 200 KB / 50 KB static budgets. The hero AVIF/WebP are
+  12.15 KB / 14.29 KB.
+- `npm run test:e2e`: **14/14** Chromium checks passed across mobile-390 and
+  desktop. This includes full calculation, encrypted backup round trip,
+  actual `context.setOffline(true)` saved-plan reload, Axe serious/critical
+  scans on landing/dashboard/legal pages, no console/page errors, the import
+  data-loss regression, legacy recovery, and keyboard dialog behavior.
+- `/opt/fleet/lib/verify-url.sh` against the fresh production build returned
+  HTTP 200 in 617 ms with no console errors; it found a title, `lang="en"`,
+  one h1, one main landmark, and zero images missing alt text or unlabeled
+  buttons.
+- The app shell, manifest, icon set, and versioned service worker were rebuilt
+  and the offline test registered the worker before reloading offline. The
+  existing update-toast / `SKIP_WAITING` implementation is unchanged by this
+  repair.
+- Privacy/source review found no analytics, CDN assets, remote fonts, or bank
+  calls. The only remote endpoint in the bundle is the documented Sociobot
+  license verification endpoint, reached only after a person supplies a Plus
+  license. The live pre-deploy response-policy check returned HSTS,
+  `nosniff`, and strict referrer policy; CSP, Permissions-Policy, and immutable
+  asset headers remain hosting-level hardening gaps, not application changes.
+- A local Lighthouse mobile run was attempted with Chromium 1208. Its trace
+  processor returned `NO_LCP` and did not emit category scores (the same
+  environment limitation noted by the prior handoff); the byte budgets,
+  Playwright Axe checks, and local browser smoke check above completed.
+
+## Deployment and remaining notes
+
+Deploy command: `npm run build`; artifact: static `dist/` with `index.html` at
+its root. Push the repair to `main` to trigger the factory static deployment;
+the live identity/hash check must be repeated after that deployment settles.
+
+No behavior from the researched brief was removed. The remaining documented
+non-blocking hosting-header hardening is outside this repository's static
+artifact scope. No other known release blockers remain.
 
 ---
 
-# Builder handoff (superseded by independent verification above)
+# Builder handoff (historical; superseded by the repair above)
 
 Work order: `daily-safe-to-spend-build-1`
 Completed: 2026-08-27

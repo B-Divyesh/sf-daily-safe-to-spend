@@ -62,7 +62,8 @@ function loadingView(): void {
 }
 
 function errorView(): void {
-  root.innerHTML = shell(`<main id="main" class="empty-view"><p class="coordinate">STORAGE NOTE</p><h1>Your saved plan could not be opened.</h1><p>${escapeHtml(loadError)} Your browser may be blocking local storage.</p><button class="button button-primary" data-action="reload">Try again</button></main>`);
+  root.innerHTML = shell(`<main id="main" class="empty-view"><p class="coordinate">STORAGE NOTE</p><h1>Your saved plan could not be opened.</h1><p>${escapeHtml(loadError)} Your browser may be blocking local storage.</p><div class="recovery-actions"><button class="button button-primary" data-action="reload">Try again</button><button class="button button-outline" data-action="clear-corrupted-plan">Clear this unreadable plan</button></div><p class="field-help">This only removes the unreadable local plan. You can then start a new one or import a valid backup.</p></main>`);
+  bindCommon();
 }
 
 function onboardingView(): void {
@@ -206,6 +207,7 @@ function renderPlus(): string {
 function bindCommon(): void {
   document.querySelectorAll<HTMLElement>("[data-action='install']").forEach((button) => button.addEventListener("click", installApp));
   document.querySelectorAll<HTMLElement>("[data-action='reload']").forEach((button) => button.addEventListener("click", () => location.reload()));
+  document.querySelectorAll<HTMLElement>("[data-action='clear-corrupted-plan']").forEach((button) => button.addEventListener("click", clearCorruptedPlan));
 }
 
 function bindDashboard(): void {
@@ -372,6 +374,19 @@ async function restoreLicense(event: SubmitEvent): Promise<void> {
 }
 
 async function resetPlan(): Promise<void> { if (!confirm("Erase this plan, every bill, protected pot, and balance record from this browser? This cannot be undone.")) return; try { await clearBudget(); state = null; onboardingView(); showToast("Local plan erased."); } catch { showToast("The plan could not be erased.", "error"); } }
+
+async function clearCorruptedPlan(): Promise<void> {
+  if (!confirm("Clear the unreadable local plan from this browser? This cannot be undone.")) return;
+  try {
+    await clearBudget();
+    state = null;
+    loadError = "";
+    onboardingView();
+    showToast("Unreadable local plan cleared. You can start again or import a valid backup.");
+  } catch {
+    showToast("The unreadable plan could not be cleared. Check that browser storage is available.", "error");
+  }
+}
 
 function formatDate(value: string): string { return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`)); }
 function formatDateTime(value: string): string { return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(value)); }
