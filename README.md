@@ -1,37 +1,36 @@
 # Today Money
 
-Today Money is a deliberately small, offline safe-to-spend planner for people
-who budget manually. Enter the cash available now, the bills due before the
-next payday, and money that must stay protected; the app shows a conservative
-daily amount and lets you test a purchase against that plan.
+Today Money is a daily spending planner for manual budgeters. It works without a bank connection or account.
 
-It is not a bank-connected budget suite or financial advice. There are no
-accounts, analytics, third-party scripts, or cloud storage. Budget data lives
-in IndexedDB on the current device and can be exported as JSON or CSV.
+Enter cash, bills, and protected money. See a daily amount until payday. Check a purchase before you make it.
 
-Live product: <https://daily-safe-to-spend.sociobot.in>
+Try the isolated sample plan: <https://daily-safe-to-spend.sociobot.in/demo>
 
-## Features
+## What it does
 
-- Transparent safe-to-spend calculation with every input visible
-- Bills due before payday, paid state, overdue handling, and protected pots
-- Non-destructive “Can I buy this?” purchase check
-- Balance history plus JSON/CSV ownership exports and imports
-- Installable PWA with a precached app shell and tested offline reload
-- Optional US$12 one-time Plus license for client-side encrypted backups
-- Mobile-first keyboard-accessible interface, privacy and terms pages
+- Shows every number used in the daily amount.
+- Includes unpaid and overdue bills through payday.
+- Keeps paid bills outside the amount.
+- Checks a purchase without changing the plan.
+- Records balance changes in this browser.
+- Downloads a spreadsheet or backup file.
+- Imports a valid backup file.
+- Works offline after the first visit.
 
-## Develop
+The core planner is free. Today Money Plus costs US$12 once. Plus adds password-protected backup and restore.
 
-Requires Node.js 20 or newer.
+Today Money does not connect to banks or give financial advice. Budget data stays in this browser.
+
+## Run it
+
+Use Node.js 20 or newer.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-The development server does not register the service worker, avoiding stale
-assets while editing.
+Open <http://localhost:5173>. Open <http://localhost:5173/demo> for sample data.
 
 ## Test and build
 
@@ -39,20 +38,13 @@ assets while editing.
 npm test
 npm run lint
 npm run build
+npm run test:claims
 npm run test:e2e
 ```
 
-`npm run build` is the deploy command. It type-checks, creates the Vite bundle,
-and injects built assets into the service worker precache. Static output lands
-in `dist/`, with `dist/index.html` at its root.
+The claim registry is [.factory/claims.json](.factory/claims.json). Each claim names its browser test.
 
-The Playwright suite uses Chromium and covers the complete calculation flow,
-an axe accessibility scan, persistence, and offline reload. Install the pinned
-browser if the environment does not already provide it:
-
-```sh
-npx playwright install chromium
-```
+The production build is in `dist/`. Its root contains `index.html` and static-host configuration.
 
 ## Calculation
 
@@ -61,23 +53,16 @@ npx playwright install chromium
 ÷ days before payday
 ```
 
-The result never displays as a negative allowance. When obligations exceed
-cash, the app reports the exact shortfall. Payday itself is excluded as a
-spending day, and an overdue unpaid bill stays included until marked paid.
+The daily amount never goes below zero. A shortfall shows the exact missing amount.
 
-## Deploy
+Payday is not a spending day. An overdue unpaid bill stays included until you mark it paid.
 
-Serve `dist/` as a static site over HTTPS. Configure clean directory routes so
-`/privacy/` and `/terms/` resolve to their included `index.html` files. Do not
-edit DNS, billing, or infrastructure from this repository; the Param Factory
-handles deployment and registers the Sociobot product slug.
+## Data and deployment
 
-## Project records
+The real plan uses the `today-money` browser database. The demo uses `today-money-demo` and never reads the real plan.
 
-- [Visual system](.factory/design.md)
-- [Build handoff](.factory/handoff.md)
-- [Privacy policy](public/privacy/index.html)
-- [Terms](public/terms/index.html)
+Serve `dist/` as a static site over HTTPS. The Param Factory manages deployment, DNS, and billing registration.
 
-MIT licensed. Generated-asset provenance is recorded in
-`.factory/design.md` and `assets/src/drafting-wallet.prompt.json`.
+Read the live [Privacy](https://daily-safe-to-spend.sociobot.in/privacy) and [Terms](https://daily-safe-to-spend.sociobot.in/terms) pages.
+
+MIT licensed. Original generated-asset provenance is recorded in [.factory/design.md](.factory/design.md).

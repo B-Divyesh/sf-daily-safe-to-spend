@@ -14,6 +14,10 @@ let state: BudgetState | null = null;
 let loadError = "";
 let license: LicenseState = { unlocked: false, checking: false, notice: "" };
 let installPrompt: BeforeInstallPromptEvent | null = null;
+let isDemo = false;
+
+const SITE_URL = "https://daily-safe-to-spend.sociobot.in";
+const BUILD_ID = "1.1.0-polish-1";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -39,44 +43,51 @@ const icon = (name: "mark" | "plus" | "bill" | "shield" | "check" | "pencil" | "
 
 function shell(content: string): string {
   return `
+    <div id="route-status" class="sr-only" aria-live="polite"></div>
     <header class="site-header">
-      <a class="brand" href="/" aria-label="Today Money home">
+      <a class="brand" href="/" data-route aria-label="Today Money home">
         <span class="brand-mark">${icon("mark")}</span>
         <span><strong>Today Money</strong><small>DAILY SPENDING PLAN</small></span>
       </a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="/demo" data-route>Demo</a>
+        <a href="/privacy" data-route>Privacy</a>
+      </nav>
       <div class="header-tools">
-        <span class="privacy-stamp">${icon("shield")} ON-DEVICE</span>
         <button class="button button-quiet install-button" type="button" data-action="install">Install app</button>
       </div>
     </header>
+    ${isDemo ? `<aside class="demo-banner" aria-label="Demo mode"><strong>Demo — sample data, nothing is saved</strong><span>Explore without changing your plan.</span><div><button class="text-button" data-action="reset-demo">Reset demo</button><a class="button button-primary" href="/" data-action="start-real">Start for real</a></div></aside>` : ""}
     ${content}
     <footer>
-      <p>Your plan stays in this browser. No bank connection. No tracking.</p>
-      <nav aria-label="Legal"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Generated illustration</span></nav>
+      <p>See a daily amount after bills and protected money.</p>
+      <nav aria-label="Footer"><a href="/privacy" data-route>Privacy</a><a href="/terms" data-route>Terms</a><span>Built by Param Factory</span><span>Build ${BUILD_ID}</span><span>Original generated illustration</span></nav>
     </footer>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>`;
 }
 
 function loadingView(): void {
-  root.innerHTML = shell(`<main id="main" class="loading-view"><p class="coordinate">SHEET 01 / LOADING</p><h1>Unrolling your plan…</h1><div class="loading-line" aria-hidden="true"></div></main>`);
+  root.innerHTML = shell(`<main id="main" class="loading-view"><p class="coordinate">SHEET 01 / LOADING</p><h1 tabindex="-1">Opening your plan…</h1><div class="loading-line" aria-hidden="true"></div></main>`);
 }
 
 function errorView(): void {
-  root.innerHTML = shell(`<main id="main" class="empty-view"><p class="coordinate">STORAGE NOTE</p><h1>Your saved plan could not be opened.</h1><p>${escapeHtml(loadError)} Your browser may be blocking local storage.</p><div class="recovery-actions"><button class="button button-primary" data-action="reload">Try again</button><button class="button button-outline" data-action="clear-corrupted-plan">Clear this unreadable plan</button></div><p class="field-help">This only removes the unreadable local plan. You can then start a new one or import a valid backup.</p></main>`);
+  root.innerHTML = shell(`<main id="main" class="empty-view"><p class="coordinate">STORAGE NOTE</p><h1 tabindex="-1">Your saved plan could not be opened.</h1><p>${escapeHtml(loadError)} Your browser may be blocking local storage.</p><div class="recovery-actions"><button class="button button-primary" data-action="reload">Try again</button><button class="button button-outline" data-action="clear-corrupted-plan">Clear this unreadable plan</button></div><p class="field-help">This only removes the unreadable local plan. You can then start a new one or import a valid backup.</p></main>`);
   bindCommon();
 }
 
 function onboardingView(): void {
   root.innerHTML = shell(`
-    <main id="main" class="onboarding">
+    <main id="main" class="landing">
+    <div class="onboarding">
       <section class="intro-copy">
-        <p class="eyebrow">A SMALL PLAN FOR ONE BIG QUESTION</p>
-        <h1>What can you safely spend today?</h1>
-        <p class="lede">Set aside every bill and protected pot first. Today Money divides only what is truly left until payday.</p>
+        <p class="eyebrow">DAILY AMOUNT AFTER BILLS AND SAVINGS</p>
+        <h1 tabindex="-1">See what you can spend today</h1>
+        <p class="lede">For manual budgeters who need a daily amount without connecting a bank.</p>
+        <div class="first-actions"><a class="button button-primary" href="/demo" data-route>Try it with sample data</a><p>See a $1,240 plan with bills and protected money.</p></div>
         <ul class="promise-list">
-          <li>${icon("check")} Works offline</li>
-          <li>${icon("check")} No bank login</li>
-          <li>${icon("check")} Every assumption stays visible</li>
+          <li>${icon("check")} Works offline after your first visit</li>
+          <li>${icon("check")} No bank connection or account</li>
+          <li>${icon("check")} Core plan is free; Plus costs $12 once</li>
         </ul>
         <picture class="hero-drawing">
           <source srcset="/assets/drafting-wallet.avif" type="image/avif" />
@@ -86,8 +97,8 @@ function onboardingView(): void {
       </section>
       <section class="setup-sheet" aria-labelledby="setup-title">
         <p class="coordinate">STARTING MEASUREMENTS / 01</p>
-        <h2 id="setup-title">Draw your spending line</h2>
-        <p>Use money you can actually spend: current accounts and cash, minus any card balance you must clear.</p>
+        <h2 id="setup-title">Enter your starting cash and payday</h2>
+        <p>Use current accounts and cash. Subtract any card balance you must clear.</p>
         <form id="setup-form">
           <label for="setup-balance">Spendable cash right now</label>
           <div class="money-input"><span aria-hidden="true">#</span><input id="setup-balance" name="balance" inputmode="decimal" type="number" min="0" step="0.01" required autocomplete="off" /></div>
@@ -96,13 +107,16 @@ function onboardingView(): void {
             <div><label for="setup-payday">Next payday</label><input id="setup-payday" name="payday" type="date" min="${todayIso()}" value="${defaultPayday()}" required /></div>
             <div><label for="setup-currency">Currency</label><select id="setup-currency" name="currency">${currencies.map((item) => `<option>${item}</option>`).join("")}</select></div>
           </div>
-          <button class="button button-primary button-wide" type="submit">Make my plan <span aria-hidden="true">→</span></button>
+          <button class="button button-primary button-wide" type="submit">Show my daily amount <span aria-hidden="true">→</span></button>
           <p class="fine-print">This is a planning aid, not financial advice. Your entries never leave this device.</p>
         </form>
       </section>
+    </div>
+    <section class="landing-section how-it-works" aria-labelledby="how-title"><p class="coordinate">WORKFLOW / 02</p><h2 id="how-title">How the daily amount works</h2><ol><li><strong>Enter cash and payday.</strong><span>Start with money you can spend now.</span></li><li><strong>Add bills and protected money.</strong><span>Mark what must stay outside daily spending.</span></li><li><strong>Check today’s amount.</strong><span>See the formula or test a purchase.</span></li></ol></section>
+    <section class="landing-section limits-section" aria-labelledby="limits-title"><p class="coordinate">BOUNDARIES / 03</p><h2 id="limits-title">What Today Money does not do</h2><p>It does not connect to banks, predict income, or give financial advice.</p><p>Your budget stays in this browser. No analytics or advertising tools receive it.</p></section>
+    <section class="landing-section plus-preview" aria-labelledby="landing-plus-title"><div><p class="coordinate">OPTIONAL BACKUP / 04</p><h2 id="landing-plus-title">Move an encrypted backup between devices</h2><p><strong>Today Money Plus costs US$12 once.</strong> It adds password-protected backup and restore. The daily plan and ordinary exports stay free.</p></div><a class="button button-primary" href="${checkoutUrl()}">Buy Plus — $12 once</a></section>
     </main>`);
   bindCommon();
-  document.querySelector<HTMLInputElement>("#setup-balance")?.focus();
   document.querySelector<HTMLFormElement>("#setup-form")?.addEventListener("submit", setupBudget);
 }
 
@@ -116,14 +130,14 @@ function dashboardView(): void {
   root.innerHTML = shell(`
     <main id="main" class="workspace">
       <div class="page-heading">
-        <div><p class="coordinate">PLAN UPDATED ${formatDateTime(state.updatedAt).toUpperCase()}</p><h1>Your spending line</h1></div>
+        <div><p class="coordinate">PLAN UPDATED ${formatDateTime(state.updatedAt).toUpperCase()}</p><h1 tabindex="-1">${isDemo ? "Your demo daily amount" : "Your daily amount"}</h1></div>
         <button class="button button-outline" type="button" data-action="edit-plan">${icon("pencil")} Update balance</button>
       </div>
       ${paydayPast ? `<div class="notice notice-warning" role="alert"><strong>Payday needs updating.</strong> Your saved date is today or earlier, so this plan uses one day. <button class="text-button" data-action="edit-plan">Update it now</button></div>` : ""}
       <div class="plan-grid">
         <section class="result-zone ${statusClass}" aria-labelledby="today-result">
           <div class="result-copy">
-            <p class="eyebrow">SAFE TO SPEND TODAY</p>
+            <p class="eyebrow">DAILY AMOUNT TODAY</p>
             <h2 id="today-result" class="daily-amount">${dailyText}</h2>
             ${calc.shortfall > 0
               ? `<p class="result-message"><strong>Short by ${money(calc.shortfall, state.currency)}</strong> before payday. Reduce protected money, delay an obligation if appropriate, or add funds.</p>`
@@ -145,7 +159,7 @@ function dashboardView(): void {
 
         <aside class="decision-zone" aria-labelledby="purchase-title">
           <p class="coordinate">QUICK CHECK / 02</p>
-          <h2 id="purchase-title">Can I buy this?</h2>
+          <h2 id="purchase-title">Check a purchase</h2>
           <p>Test a purchase without changing your plan.</p>
           <label for="purchase-amount">Purchase amount</label>
           <div class="money-input"><span aria-hidden="true">#</span><input id="purchase-amount" inputmode="decimal" type="number" min="0" step="0.01" /></div>
@@ -159,7 +173,7 @@ function dashboardView(): void {
       </section>
 
       <section class="schedule-section" aria-labelledby="envelopes-title">
-        <div class="section-heading"><div><p class="coordinate">PROTECTED MONEY / 04</p><h2 id="envelopes-title">Do not spend</h2><p>Keep emergency money, savings, and other protected pots outside the daily calculation.</p></div><button class="button button-outline" data-action="add-envelope">${icon("plus")} Protect money</button></div>
+        <div class="section-heading"><div><p class="coordinate">PROTECTED MONEY / 04</p><h2 id="envelopes-title">Protected money</h2><p>Keep emergency money, savings, and other protected money outside the daily calculation.</p></div><button class="button button-outline" data-action="add-envelope">${icon("plus")} Protect money</button></div>
         ${renderEnvelopes(state.envelopes, state.currency)}
       </section>
 
@@ -175,7 +189,7 @@ function dashboardView(): void {
 
       ${renderPlus()}
 
-      <section class="danger-zone" aria-labelledby="reset-title"><div><h2 id="reset-title">Start over</h2><p>Erase this plan and all balance history from this browser.</p></div><button class="button button-danger" data-action="reset">Erase local plan</button></section>
+      ${isDemo ? `<section class="danger-zone" aria-labelledby="reset-title"><div><h2 id="reset-title">Reset the sample</h2><p>Restore the original sample bills, protected money, and balance.</p></div><button class="button button-danger" data-action="reset-demo">Reset demo</button></section>` : `<section class="danger-zone" aria-labelledby="reset-title"><div><h2 id="reset-title">Start over</h2><p>Erase this plan and all balance history from this browser.</p></div><button class="button button-danger" data-action="reset">Erase local plan</button></section>`}
     </main>`);
   bindDashboard();
 }
@@ -201,13 +215,107 @@ function renderHistory(current: BudgetState): string {
 
 function renderPlus(): string {
   if (license.unlocked) return `<section class="plus-section is-unlocked" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">PLUS UNLOCKED</span><h2 id="plus-title">Encrypted portable backup</h2><p>Create a password-protected copy for another device. We never receive the file or password.</p></div><div class="backup-grid"><form id="encrypt-form"><label for="backup-password">Backup password <span>8+ characters</span></label><input id="backup-password" name="password" type="password" minlength="8" required autocomplete="new-password" /><button class="button button-primary" type="submit">Download encrypted backup</button></form><form id="decrypt-form"><label for="restore-password">Restore password</label><input id="restore-password" name="password" type="password" minlength="8" required autocomplete="current-password" /><label class="button button-outline file-button">Choose encrypted backup<input id="encrypted-file" type="file" accept="application/json,.tmbackup" required /></label><button class="button button-outline" type="submit">Restore encrypted backup</button></form></div><p class="license-note">${license.notice || "License verified for this device."}</p></section>`;
-  return `<section class="plus-section" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">ONE-TIME UNLOCK</span><h2 id="plus-title">Take an encrypted copy with you</h2><p><strong>Today Money Plus — US$12 once.</strong> Unlock password-protected backup and restore across your own devices. The complete daily plan and normal JSON/CSV exports stay free.</p></div><div class="plus-actions"><a class="button button-primary" href="${checkoutUrl()}">Buy Plus — $12 once</a><form id="license-form"><label for="license-token">Have a license? Paste it here</label><div class="inline-form"><input id="license-token" name="license" type="text" required autocomplete="off" spellcheck="false" /><button class="button button-outline" type="submit">Verify license</button></div></form></div><p class="license-note">${license.checking ? "Checking license…" : escapeHtml(license.notice)} Sociobot/Dodo is the merchant of record. <a href="/terms/">Refund terms</a>.</p></section>`;
+  return `<section class="plus-section" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">ONE-TIME PURCHASE</span><h2 id="plus-title">Take an encrypted copy with you</h2><p><strong>Today Money Plus — US$12 once.</strong> Add password-protected backup and restore across your own devices. The daily plan and ordinary downloads stay free.</p></div><div class="plus-actions"><a class="button button-primary" href="${checkoutUrl()}">Buy Plus — $12 once</a><form id="license-form"><label for="license-token">Have a license? Paste it here</label><div class="inline-form"><input id="license-token" name="license" type="text" required autocomplete="off" spellcheck="false" /><button class="button button-outline" type="submit">Verify license</button></div></form></div><p class="license-note">${license.checking ? "Checking license…" : escapeHtml(license.notice)} Sociobot/Dodo is the merchant of record. <a href="/terms" data-route>Refund terms</a>.</p></section>`;
+}
+
+function dateInDays(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return todayIso(date);
+}
+
+function demoBudget(): BudgetState {
+  const now = new Date().toISOString();
+  return {
+    version: 1,
+    balance: 1240,
+    payday: dateInDays(10),
+    currency: "USD",
+    bills: [
+      { id: "demo-rent", name: "Rent share", amount: 300, dueDate: dateInDays(3), paid: false },
+      { id: "demo-electric", name: "Electric bill", amount: 90, dueDate: dateInDays(-2), paid: false },
+      { id: "demo-phone", name: "Phone bill", amount: 50, dueDate: dateInDays(5), paid: true },
+    ],
+    envelopes: [{ id: "demo-emergency", name: "Emergency savings", amount: 250 }],
+    history: [
+      { id: "demo-history-now", at: now, balance: 1240 },
+      { id: "demo-history-before", at: new Date(Date.now() - 86_400_000).toISOString(), balance: 1180 },
+    ],
+    updatedAt: now,
+  };
+}
+
+function legalView(kind: "privacy" | "terms"): void {
+  const privacy = kind === "privacy";
+  root.innerHTML = shell(`<main id="main" class="legal-view"><p class="eyebrow">${privacy ? "PRIVACY" : "TERMS"} SHEET / 2026-08-28</p><h1 tabindex="-1">${privacy ? "Your money stays yours" : "A planning tool, not financial advice"}</h1>${privacy ? `
+    <p>Today Money works without an account, analytics, advertising, bank connection, or cloud budget storage.</p>
+    <h2>What this browser stores</h2><p>Your balance, payday, bills, protected money, and balance history stay in this browser. A Plus license is stored only after you provide one.</p>
+    <h2>What leaves this device</h2><p>Your budget is not transmitted. Buying or verifying Plus contacts Sociobot’s billing service. It sends the license, not your budget.</p>
+    <h2>Demo data</h2><p>The demo uses a separate browser database. Reset demo or Start for real clears that sample database.</p>
+    <h2>Exports and deletion</h2><p>Spreadsheet, backup, and encrypted backup files are created here. You choose where to save them. Erase local plan removes the budget.</p>
+    <h2>Contact</h2><p>Email <a href="mailto:privacy@sociobot.in">privacy@sociobot.in</a> with privacy questions.</p>` : `
+    <p>Today Money calculates a daily amount from figures you enter. It does not verify balances or provide financial, legal, tax, or investment advice.</p>
+    <h2>Plus purchase</h2><p>Today Money Plus costs US$12 once. It adds encrypted backup and restore. The daily planner and ordinary exports remain free.</p><p>Sociobot/Dodo is the merchant of record. It handles payments and refunds. A refund revokes the license.</p>
+    <h2>Availability and data</h2><p>The software is provided as is. Keep your own exports. Clearing site data may remove your plan permanently.</p><p>Encrypted backup passwords cannot be recovered.</p>
+    <h2>Acceptable use</h2><p>Do not interfere with the service, bypass license checks, or use it unlawfully.</p>
+    <h2>Contact</h2><p>Email <a href="mailto:support@sociobot.in">support@sociobot.in</a> with product or purchase questions.</p>`}</main>`);
+  bindCommon();
+}
+
+function notFoundView(): void {
+  root.innerHTML = shell(`<main id="main" class="not-found"><p class="coordinate">MISSING SHEET / 404</p><h1 tabindex="-1">This page does not exist</h1><p>The address points outside this spending plan.</p><a class="button button-primary" href="/" data-route>Return to Today Money</a></main>`);
+  bindCommon();
+}
+
+function setMeta(title: string, description: string, path: string): void {
+  document.title = title;
+  const canonicalPath = path === "/" ? "/" : `${path.replace(/\/$/, "")}/`;
+  const canonical = `${SITE_URL}${canonicalPath}`;
+  const set = (selector: string, attr: string, value: string) => document.querySelector(selector)?.setAttribute(attr, value);
+  set('meta[name="description"]', "content", description);
+  set('link[rel="canonical"]', "href", canonical);
+  set('meta[property="og:title"]', "content", title);
+  set('meta[property="og:description"]', "content", description);
+  set('meta[property="og:url"]', "content", canonical);
+  set('meta[name="twitter:title"]', "content", title);
+  set('meta[name="twitter:description"]', "content", description);
+}
+
+function focusRouteHeading(): void {
+  requestAnimationFrame(() => {
+    const heading = document.querySelector<HTMLElement>("main h1");
+    heading?.focus({ preventScroll: true });
+    const status = document.querySelector<HTMLElement>("#route-status");
+    if (status && heading) status.textContent = `${heading.textContent ?? "Page"} page loaded`;
+    window.scrollTo(0, 0);
+  });
+}
+
+async function navigate(path: string): Promise<void> {
+  if (isDemo && !path.startsWith("/demo")) await clearBudget(true).catch(() => undefined);
+  history.pushState({}, "", path);
+  await renderRoute(true);
+}
+
+async function resetDemo(): Promise<void> {
+  await clearBudget(true);
+  state = demoBudget();
+  await saveBudget(state, true);
+  dashboardView();
+  showToast("Demo reset to its original sample plan.");
 }
 
 function bindCommon(): void {
   document.querySelectorAll<HTMLElement>("[data-action='install']").forEach((button) => button.addEventListener("click", installApp));
   document.querySelectorAll<HTMLElement>("[data-action='reload']").forEach((button) => button.addEventListener("click", () => location.reload()));
   document.querySelectorAll<HTMLElement>("[data-action='clear-corrupted-plan']").forEach((button) => button.addEventListener("click", clearCorruptedPlan));
+  document.querySelectorAll<HTMLElement>("[data-action='reset-demo']").forEach((button) => button.addEventListener("click", () => void resetDemo()));
+  document.querySelectorAll<HTMLAnchorElement>("[data-action='start-real']").forEach((link) => link.addEventListener("click", (event) => { event.preventDefault(); void navigate("/"); }));
+  document.querySelectorAll<HTMLAnchorElement>("a[data-route]").forEach((link) => link.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    void navigate(new URL(link.href).pathname);
+  }));
 }
 
 function bindDashboard(): void {
@@ -322,7 +430,7 @@ function updatePurchaseAnswer(): void {
 async function persist(message: string): Promise<void> {
   if (!state) return;
   state.updatedAt = new Date().toISOString();
-  try { await saveBudget(state); dashboardView(); showToast(message); }
+  try { await saveBudget(state, isDemo); dashboardView(); showToast(message); }
   catch (error) { showToast(error instanceof Error ? error.message : "Your change could not be saved.", "error"); }
 }
 
@@ -373,12 +481,12 @@ async function restoreLicense(event: SubmitEvent): Promise<void> {
   storeLicense(token); license = { unlocked: false, checking: true, notice: "" }; dashboardView(); license = await verifyLicense(true); dashboardView(); showToast(license.notice || "License checked.", license.unlocked ? "success" : "error");
 }
 
-async function resetPlan(): Promise<void> { if (!confirm("Erase this plan, every bill, protected pot, and balance record from this browser? This cannot be undone.")) return; try { await clearBudget(); state = null; onboardingView(); showToast("Local plan erased."); } catch { showToast("The plan could not be erased.", "error"); } }
+async function resetPlan(): Promise<void> { if (!confirm("Erase this plan, every bill, protected money amount, and balance record from this browser? This cannot be undone.")) return; try { await clearBudget(isDemo); state = null; if (isDemo) { state = demoBudget(); await saveBudget(state, true); dashboardView(); showToast("Demo reset to its sample plan."); } else { onboardingView(); showToast("Local plan erased."); } } catch { showToast("The plan could not be erased.", "error"); } }
 
 async function clearCorruptedPlan(): Promise<void> {
   if (!confirm("Clear the unreadable local plan from this browser? This cannot be undone.")) return;
   try {
-    await clearBudget();
+    await clearBudget(isDemo);
     state = null;
     loadError = "";
     onboardingView();
@@ -428,15 +536,46 @@ function scheduleServiceWorker(): void {
   else window.addEventListener("load", arm, { once: true });
 }
 
-async function init(): Promise<void> {
-  bindConnectivity(); captureLicenseFromUrl(); license = cachedLicenseState();
-  onboardingView();
+async function plannerView(demo: boolean): Promise<void> {
+  isDemo = demo;
+  state = null;
+  loadError = "";
+  if (demo) setMeta("Demo — Today Money", "Try a $1,240 daily spending plan with sample bills and protected money.", "/demo");
+  else setMeta("Today Money — see what you can spend today", "See a daily amount after bills and protected money, without connecting a bank.", "/");
+  if (!demo) onboardingView();
+  else loadingView();
   let initializing = true;
   const loadingTimer = window.setTimeout(() => { if (initializing) loadingView(); }, 1000);
-  try { state = await loadBudget(); initializing = false; window.clearTimeout(loadingTimer); if (state && !isBudgetState(state)) throw new Error("The saved data format is not recognized."); if (state) dashboardView(); else if (document.querySelector(".loading-view")) onboardingView(); }
+  try {
+    state = await loadBudget(demo);
+    if (demo && !state) { state = demoBudget(); await saveBudget(state, true); }
+    initializing = false;
+    window.clearTimeout(loadingTimer);
+    if (state && !isBudgetState(state)) throw new Error("The saved data format is not recognized.");
+    if (state) dashboardView(); else if (document.querySelector(".loading-view")) onboardingView();
+  }
   catch (error) { initializing = false; window.clearTimeout(loadingTimer); loadError = error instanceof Error ? error.message : "Unknown storage error."; errorView(); }
+}
+
+async function renderRoute(moveFocus = false): Promise<void> {
+  const path = location.pathname.replace(/\/+$/, "") || "/";
+  const queryDemo = new URL(location.href).searchParams.get("demo") === "1";
+  const wasDemo = isDemo;
+  if (wasDemo && path !== "/demo" && !queryDemo) await clearBudget(true).catch(() => undefined);
+  if (path === "/" && !queryDemo) await plannerView(false);
+  else if (path === "/demo" || (path === "/" && queryDemo)) await plannerView(true);
+  else if (path === "/privacy") { isDemo = false; setMeta("Privacy — Today Money", "How Today Money stores budget data in this browser and handles Plus license checks.", "/privacy"); legalView("privacy"); }
+  else if (path === "/terms") { isDemo = false; setMeta("Terms — Today Money", "Terms for the Today Money daily planner and one-time Plus purchase.", "/terms"); legalView("terms"); }
+  else { isDemo = false; setMeta("Page not found — Today Money", "This Today Money page does not exist.", path); notFoundView(); }
+  if (moveFocus) focusRouteHeading();
+}
+
+async function init(): Promise<void> {
+  bindConnectivity(); captureLicenseFromUrl(); license = cachedLicenseState();
+  window.addEventListener("popstate", () => void renderRoute(true));
+  await renderRoute(false);
   scheduleServiceWorker();
-  if (localStorage.getItem("sb_license:daily-safe-to-spend")) { license = await verifyLicense(); if (state) dashboardView(); }
+  if (!isDemo && state && localStorage.getItem("sb_license:daily-safe-to-spend")) { license = await verifyLicense(); dashboardView(); }
 }
 
 init();

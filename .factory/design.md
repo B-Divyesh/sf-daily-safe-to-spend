@@ -114,3 +114,7 @@ Icons (ruler mark, wallet, bill, shield, check) are original inline SVG paths
 authored for the interface. The PWA app icons are generated from the same
 hand-made compass/coin mark and palette.
 
+The 1200×630 social preview is a center crop of the original `drafting-wallet`
+asset. The SVG favicon is a hand-authored reduction of the same compass mark;
+the 180px touch icon is resized from the project-owned app icon. No new
+third-party source material was introduced during polish round 1.

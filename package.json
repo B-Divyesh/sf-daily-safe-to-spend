@@ -9,7 +9,8 @@
     "lint": "tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:claims": "playwright test tests/claims.spec.ts --project=mobile-390"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",

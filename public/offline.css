@@ -1,0 +1,6 @@
+html { font-family: ui-monospace, monospace; color: #f4efd8; background: #071d35; }
+body { display: grid; min-height: 100vh; margin: 0; place-items: center; background-image: linear-gradient(#2b6d9950 1px, transparent 1px), linear-gradient(90deg, #2b6d9950 1px, transparent 1px); background-size: 32px 32px; }
+main { width: min(600px, calc(100% - 40px)); }
+p { line-height: 1.6; color: #b8c9d7; }
+a { display: inline-block; min-height: 44px; padding: 11px 16px; color: #10263a; background: #ffd166; font-weight: 700; text-decoration: none; }
+a:focus-visible { outline: 3px solid #ffd166; outline-offset: 4px; }

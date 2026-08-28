@@ -1,7 +1,13 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 const dist = new URL("../dist/", import.meta.url).pathname;
+const appHtml = await readFile(join(dist, "index.html"), "utf8");
+for (const route of ["demo", "privacy", "terms"]) {
+  await mkdir(join(dist, route), { recursive: true });
+  await writeFile(join(dist, route, "index.html"), appHtml);
+}
+await writeFile(join(dist, "404.html"), appHtml);
 async function files(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   const nested = await Promise.all(entries.map((entry) => entry.isDirectory() ? files(join(dir, entry.name)) : [join(dir, entry.name)]));

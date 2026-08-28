@@ -34,7 +34,7 @@ test.afterEach(async ({ page }) => {
 test("builds a conservative plan and checks a purchase", async ({ page }) => {
   await page.getByLabel("Spendable cash right now").fill("1000");
   await page.getByLabel("Next payday").fill(isoInDays(10));
-  await page.getByRole("button", { name: "Make my plan" }).click();
+  await page.getByRole("button", { name: "Show my daily amount" }).click();
 
   await page.getByRole("button", { name: "Add bill" }).first().click();
   await page.getByLabel("Bill name").fill("Rent");
@@ -59,20 +59,20 @@ test("builds a conservative plan and checks a purchase", async ({ page }) => {
 test("saved plan reloads while offline", async ({ page, context }) => {
   await page.getByLabel("Spendable cash right now").fill("420");
   await page.getByLabel("Next payday").fill(isoInDays(7));
-  await page.getByRole("button", { name: "Make my plan" }).click();
-  await expect(page.getByRole("heading", { name: "Your spending line" })).toBeVisible();
+  await page.getByRole("button", { name: "Show my daily amount" }).click();
+  await expect(page.getByRole("heading", { name: "Your daily amount" })).toBeVisible();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Your spending line" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your daily amount" })).toBeVisible();
   await expect(page.getByText(/\$60\.00/).first()).toBeVisible();
 });
 
 test("rejects semantic-date imports without replacing the saved local plan", async ({ page }) => {
   await page.getByLabel("Spendable cash right now").fill("50");
   await page.getByLabel("Next payday").fill(isoInDays(10));
-  await page.getByRole("button", { name: "Make my plan" }).click();
+  await page.getByRole("button", { name: "Show my daily amount" }).click();
   await expect(page.locator(".measurements").getByText("$50.00", { exact: true }).first()).toBeVisible();
 
   let destructiveConfirmationShown = false;
@@ -98,7 +98,7 @@ test("rejects semantic-date imports without replacing the saved local plan", asy
   await expect(page.getByText("That file is not a valid Today Money plan.")).toBeVisible();
   expect(destructiveConfirmationShown).toBe(false);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Your spending line" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your daily amount" })).toBeVisible();
   await expect(page.locator(".measurements").getByText("$50.00", { exact: true }).first()).toBeVisible();
 });
 
@@ -124,15 +124,15 @@ test("offers a reset route for a legacy unreadable local plan", async ({ page })
   await expect(page.getByRole("heading", { name: "Your saved plan could not be opened." })).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Clear this unreadable plan" }).click();
-  await expect(page.getByRole("heading", { name: "What can you safely spend today?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "See what you can spend today" })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "What can you safely spend today?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "See what you can spend today" })).toBeVisible();
 });
 
 test("keyboard opens and closes a plan dialog without losing focus", async ({ page }) => {
   await page.getByLabel("Spendable cash right now").fill("100");
   await page.getByLabel("Next payday").fill(isoInDays(7));
-  await page.getByRole("button", { name: "Make my plan" }).click();
+  await page.getByRole("button", { name: "Show my daily amount" }).click();
 
   const addBill = page.getByRole("button", { name: "Add bill" }).first();
   await addBill.focus();
@@ -147,7 +147,7 @@ test("keyboard opens and closes a plan dialog without losing focus", async ({ pa
 test("landing and legal pages have accessible document structure", async ({ page }) => {
   let results = await new AxeBuilder({ page }).analyze();
   expect(results.violations.filter((item) => ["serious", "critical"].includes(item.impact ?? ""))).toEqual([]);
-  for (const path of ["/privacy/", "/terms/"]) {
+  for (const path of ["/demo", "/privacy/", "/terms/", "/missing-sheet"]) {
     await page.goto(path);
     await expect(page.locator("main")).toHaveCount(1);
     await expect(page.locator("h1")).toHaveCount(1);
@@ -156,10 +156,21 @@ test("landing and legal pages have accessible document structure", async ({ page
   }
 });
 
+test("reduced motion, 200 percent text, and 390px layout keep the core controls usable", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/demo");
+  const motion = await page.locator(".daily-amount").evaluate((element) => Number.parseFloat(getComputedStyle(element, "::after").animationDuration));
+  expect(motion).toBeLessThan(0.001);
+  await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
+  await expect(page.getByRole("button", { name: "Update balance" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add bill" }).first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
+});
+
 test("Plus encrypted backup restores the original local plan", async ({ page }) => {
   await page.getByLabel("Spendable cash right now").fill("700");
   await page.getByLabel("Next payday").fill(isoInDays(7));
-  await page.getByRole("button", { name: "Make my plan" }).click();
+  await page.getByRole("button", { name: "Show my daily amount" }).click();
   await page.evaluate(() => {
     localStorage.setItem("sb_license:daily-safe-to-spend", "local-test-license");
     localStorage.setItem("sb_license:daily-safe-to-spend:verdict", JSON.stringify({ valid: true, checkedAt: Date.now() }));
