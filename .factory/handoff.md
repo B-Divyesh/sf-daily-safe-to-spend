@@ -1,50 +1,125 @@
-# Today Money — review 3 handoff
+# Today Money — polish round 3 handoff
 
-Work order: `daily-safe-to-spend-review-3`
+Work order: `daily-safe-to-spend-polish-3`
+
 Completed: 2026-08-28
-Reviewed commit: `93bff872fd7e65c450ed99d9b05b09898750e1b9`
+
+Product commit: `43ae27935d957db5b0759be9559e1835f31538f6`
+
 Live: <https://daily-safe-to-spend.sociobot.in>
 
 ## Outcome
 
-The adversarial review verdict is **FAIL** with two blocking findings and one
-minor finding. The cold landing, one-click demo, sandbox isolation, offline
-reload, routing, accessibility baseline, and all registered claims pass. The
-remaining issues are unlisted claims in the paid-feature UI and inconsistent
-merchant wording. No product code was modified.
+All findings from `.factory/review-1.md`, `.factory/review-2.md`, and
+`.factory/review-3.md` are resolved. The PWA keeps its blueprint/drafting
+identity and static offline deployment class. The complete finding map is
+[polish-3.md](polish-3.md).
 
-Full findings and evidence: [review-3.md](review-3.md).
+Round 3 added observable proof for existing-license restoration and the full
+encrypted-backup privacy boundary. It also removed current merchant wording
+while checkout remains unavailable. A live self-review found that rewritten
+404 responses lacked global security headers; that defect was fixed,
+redeployed, and verified before handoff.
 
-## Verification
+## What changed
 
-- Fresh clone `/tmp/today-money-review3.3u9OgL` at `93bff87`:
-  `npm ci`, `npm test` (6/6), `npm run lint`, and `npm run build` passed.
-- Every one of the 27 `.factory/claims.json` commands passed when run
-  separately from that clone.
-- `npm run test:e2e` passed 50/50 cases across mobile and desktop.
-- Live cold checks at 390×844 and 1440×1000 passed the first-read test.
-- Live demo reset, real/demo separation, demo disposal, same-origin traffic,
-  and offline reload were exercised independently.
-- `/`, `/demo`, `/privacy`, and `/terms` returned 200; a missing route returned
-  404. Link crawl found no dead internal link.
-- Live Axe checks found zero serious/critical findings on all routes and 404.
+- Added `license-restore` to `.factory/claims.json`. The test submits the
+  visible license form and covers a recorded valid response, invalid response,
+  network failure, cached verdict, unlocked controls, and offline cached use.
+- Added `encrypted-backup-local-privacy`. It covers verify, encrypt, download,
+  file selection, and restore while intercepting every request. The sole
+  external request contains only the license; the password, file, and budget
+  never leave the browser.
+- Added recorded verification fixtures in
+  `tests/fixtures/license-responses.json`.
+- Removed current merchant-of-record wording from the unavailable Plus state.
+  Planned price and availability wording now agree across home, planner, and
+  legal routes.
+- Moved security headers to Static Web Apps `globalHeaders`, covering normal
+  pages, the manifest, and rewritten 404 responses.
+- Pinned Playwright to the installed Chromium channel for repeatable clean
+  worker runs.
+- Updated the build marker to `1.3.0-polish-3`, the claim registry, copy audit,
+  catalog description, and this evidence package.
 
-## Evidence
+The catalog description is 94 characters and starts with a verb:
+“Calculate what you can spend today after bills and protected money, without
+connecting a bank.”
 
-- [Mobile cold landing](evidence/review-3-live-home-mobile.png)
-- [Desktop cold landing](evidence/review-3-live-home-desktop.png)
-- [Mobile demo first screen](evidence/review-3-live-demo-mobile.png)
-- [Unlicensed Plus copy](evidence/review-3-live-plus-unlicensed.png)
-- [Licensed Plus privacy copy](evidence/review-3-live-plus-unlocked.png)
+## Clean-clone verification
 
-## Known gaps
+Verified from `/tmp/today-money-polish3-release.F2iGZD` at exact product commit
+`43ae27935d957db5b0759be9559e1835f31538f6`:
 
-- `F-3-1`: visible existing-license restoration has no registered observable
-  verification test.
-- `F-3-2`: file/password and license-only network privacy promises are not
-  covered by the registered licensed flow.
-- `F-3-3`: current merchant-of-record wording conflicts with closed purchases
-  and future wording in Terms.
+- `npm ci`: passed; 0 audit vulnerabilities.
+- `npm test`: 6/6 passed.
+- `npm run lint`: passed.
+- `npm run build`: passed; static output is in `dist/` with
+  `dist/index.html` at its root.
+- All 29 commands in `.factory/claims.json`: passed separately.
+- `npx playwright test --retries=0`: 54/54 passed at mobile and desktop sizes.
+- Axe route sweep: zero serious or critical violations on home, demo, privacy,
+  terms, and 404.
+- URL verifier: correct title, language, landmarks, image alternatives, named
+  controls, and zero normal-route console errors on home and demo.
 
-Next work should add the two claim entries/tests and align the merchant copy,
-then repeat the full live and clean-clone review.
+Detailed output is recorded in
+[polish-3-clean-clone.md](evidence/polish-3-clean-clone.md).
+
+## Live verification
+
+The final static artifact was deployed with the work-order deploy command.
+The live JavaScript SHA-256 matched the built artifact. Cold sessions then
+verified:
+
+- `/`, `/demo`, `/privacy`, and `/terms` return 200; an unknown route returns
+  the designed page with HTTP 404.
+- `/?demo=1` enters the isolated seeded demo and has demo title/canonical data.
+- A real $333 plan remained unchanged after editing/resetting/exiting the demo;
+  the demo restored its $1,240 seed and $60 daily amount.
+- The installed demo reloaded offline with its banner and sample result.
+- Demo → Privacy → Back moved focus to the correct route H1 each time.
+- No 390 px horizontal overflow and no normal-route console/page errors.
+- Live Axe checks found zero serious or critical violations on every route.
+- The production bundle passed valid, invalid, and failed license responses,
+  cached access, encrypted restore, and the license-only network boundary.
+- Home, manifest, and 404 responses include CSP, Permissions-Policy,
+  Referrer-Policy, and `X-Content-Type-Options`; manifest MIME is correct.
+
+Live mobile Lighthouse: performance 100, accessibility 100, best practices
+100, SEO 100; FCP 0.9 s, LCP 1.1 s, CLS 0, TBT 20 ms. Local mobile Lighthouse
+also scored 100 in all four categories; FCP 0.9 s, LCP 1.4 s, CLS 0, TBT 30 ms.
+
+Built budgets: JavaScript 40.48 KB raw / 13.08 KB gzip; CSS 19.87 KB raw /
+5.15 KB gzip; hero AVIF 12.15 KB; no web fonts.
+
+Evidence:
+
+- [Live home](evidence/polish-3-live-home/screenshot-mobile.png)
+- [Live isolated demo](evidence/polish-3-live-demo/screenshot-mobile.png)
+- [Live restored license](evidence/polish-3-live-license-restored.png)
+- [Live styled 404](evidence/polish-3-live-404-mobile.png)
+- [Live Lighthouse report](evidence/polish-3-lighthouse-live.json)
+- [Live home headers](evidence/polish-3-live-home-headers.txt)
+- [Live manifest headers](evidence/polish-3-live-manifest-headers.txt)
+- [Live 404 headers](evidence/polish-3-live-404-headers.txt)
+
+## Run and verify
+
+```sh
+npm ci
+npm test
+npm run lint
+npm run build
+npx playwright test --retries=0
+```
+
+Run every `test` value in `.factory/claims.json` separately for the acceptance
+claim suite. Serve `dist/` over HTTP to verify service-worker and offline
+behavior.
+
+## Known gaps and next steps
+
+None. Purchases are deliberately not open, and the product makes no current
+checkout or merchant claim. When checkout is enabled in a future work order,
+its billing and merchant assertions will require new registered claim tests.
