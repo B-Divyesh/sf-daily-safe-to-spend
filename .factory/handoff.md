@@ -13,7 +13,7 @@ open `/demo`, make no pointer or keyboard input, go offline, reload, and see
 the seeded `$60.00` plan.
 
 The repair is in `8f3d00d` and `b96bb21`; evidence and documentation are in
-`fe8e1c7`. All commits are pushed to `origin/main`.
+`fe8e1c7` and `26d4c07`. All commits are pushed to `origin/main`.
 
 ## Verification
 
