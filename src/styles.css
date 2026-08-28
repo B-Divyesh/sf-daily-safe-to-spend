@@ -192,6 +192,8 @@ input:focus, select:focus { border-color: var(--blue-900); outline: 3px solid #3
 .how-it-works span { margin-top: 8px; color: var(--chalk-muted); font-size: 1rem; }
 .limits-section { background: rgb(11 41 72 / 58%); box-shadow: -40px 0 0 rgb(11 41 72 / 58%), 40px 0 0 rgb(11 41 72 / 58%); }
 .plus-preview { display: flex; align-items: center; justify-content: space-between; gap: 32px; }
+.availability-note { max-width: 360px; margin: 0; padding: 14px 16px; color: var(--chalk-muted); border: 1px dashed var(--blue-600); }
+.plus-section .availability-note { color: #526879; border-color: #6b8496; }
 .legal-view, .not-found { width: min(780px, calc(100% - 40px)); min-height: 68vh; margin: 0 auto; padding: 72px 0 96px; }
 .legal-view h1, .not-found h1 { max-width: 760px; }
 .legal-view h2 { margin-top: 44px; }

@@ -1,247 +1,69 @@
-# Today Money — review handoff
+# Today Money — polish round 1 handoff
 
-Work order: daily-safe-to-spend-review-1
-Date: 2026-08-28
-Result: **FAIL**
+Work order: `daily-safe-to-spend-polish-1`  
+Completed: 2026-08-28  
+Live: <https://daily-safe-to-spend.sociobot.in>
 
-No product code was changed. This review added .factory/review-1.md and replaced the current handoff with the review result.
+## Delivered
 
-Verification performed:
+- Rewrote the first screen for manual budgeters, with “Try it with sample data” and “Show my daily amount” as clear actions.
+- Added isolated `/demo` and `?demo=1` entry points. The $1,240 sample uses `today-money-demo`, never `today-money`.
+- Added the persistent demo banner, reset, exit, three bills, protected money, formula, history, and purchase check.
+- Added `.factory/claims.json` with 26 claims and one tagged browser test for every claim.
+- Added real route handling, unique titles and canonical metadata, route focus announcements, Back/Forward focus, and an HTTP 404 page.
+- Moved privacy and terms into the shared blueprint shell with complete header and footer navigation.
+- Added workflow, limitations, privacy, and exact planned Plus-price sections without changing the drafting-sheet identity.
+- Added Open Graph/Twitter metadata, original-art social preview, SVG favicon, and 180px touch icon.
+- Added CSP, Permissions-Policy, manifest MIME, immutable hashed-asset caching, and a 404 response override.
+- Preserved the earlier strict import validation and unreadable-plan recovery.
 
-- Live fresh-context Chromium checks at 390px and desktop.
-- /demo isolation probe, which showed a real plan at the nominal demo URL.
-- Live route, metadata, link, focus, and header checks.
-- npm ci, npm test (6/6), npm run build, and the configured Playwright suite (14 mobile/desktop cases).
-- Live confirmation that the prior malformed-date import blocker is fixed.
+Every review item is mapped to its fix and evidence in [.factory/polish-1.md](polish-1.md).
 
-Release blockers are no one-click isolated sample-data demo, no .factory/claims.json or tagged claim tests, and an unknown URL that silently renders onboarding rather than a designed 404. The full findings, copy audit, evidence, and exact fixes are in .factory/review-1.md.
+## Verification
 
-To rerun the repository checks:
-
-```sh
-npm ci
-npm test
-npm run build
-npm run test:e2e
-```
-
-Then repeat the live cold/demo checks documented in the review. Do not mark the product ready until every finding is resolved and independently retested.
-
----
-
-## Historical handoff retained from the reviewed base
-
-# Today Money — independent verification: PASS
-
-Work order: `daily-safe-to-spend-verify-2`
-
-Verified candidate: `f9a142ae9b18080347ef6fb59b8491e6ede12c0a`
-Verified live URL: <https://daily-safe-to-spend.sociobot.in>
-Date: 2026-08-28
-
-## Unambiguous result: PASS
-
-Fresh independent QA passed the clean install, 6/6 unit tests, TypeScript check,
-exact production build, and isolated 14/14 Playwright run across 390px mobile
-and desktop. The built app and live deployment match byte-for-byte for the
-checked app shell, assets, PWA files, and legal pages. Live and local Chromium
-checks passed saved-plan offline reload, active service-worker cache,
-installability, zero console/page errors, keyboard focus, reduced motion, and
-the update-toast/skip-waiting lifecycle. Axe serious/critical findings were
-zero; the local Lighthouse run reported 100 accessibility, best practices, and
-SEO, FCP 1.0 s, CLS 0 (its performance composite was unavailable because the
-container trace returned `NO_LCP`).
-
-The complete evidence and exact commands are in
-`.factory/verification-2.md`.
-
-## Known non-blocking deployment follow-up
-
-The live host uses `max-age=30` rather than immutable cache directives for
-hashed assets and omits CSP and Permissions-Policy. It also serves the manifest
-as `application/octet-stream`; Chromium still reports zero installability
-errors. These are P2 hosting hardening/configuration items, not product-code
-or functional blockers. The versioned cache-first service worker works offline.
-
----
-
-# Today Money — repair handoff: ready to deploy
-
-Work order: `daily-safe-to-spend-repair-1`
-
-Base / failed candidate: `b1bfdac0eec82c02024e950586bd80b3722ad31c` /
-`c08128d46c80e9896a951702f90ed9c2384fa539`
-Date: 2026-08-28
-
-## Release-blocking repair
-
-The verifier's P1 import/data-loss case was reproduced with its exact JSON:
-`payday: "2026-13-01"` and `updatedAt: "not-a-date"` passed the old
-shape-only validator, replaced the IndexedDB plan, and then caused an invalid
-date render on reload.
-
-The import boundary now rejects impossible Gregorian dates (including bill due
-dates) and accepts timestamps only in the canonical, parseable
-`Date#toISOString()` UTC form used by Today Money exports. Balance-history
-timestamps are checked too. `saveBudget` independently rejects an invalid
-state before beginning an IndexedDB write, so a future caller cannot persist
-an unchecked object. Validation occurs before the destructive import
-confirmation and before the in-memory plan is replaced.
-
-For a record corrupted by an older build, the storage error screen now offers
-the confirmed **Clear this unreadable plan** recovery route. It clears only the
-local budget record and returns to onboarding, where the person can start over
-or import a valid backup.
-
-## Regression coverage
-
-- Unit coverage rejects `2026-13-01`, `2026-02-30`, arbitrary/rolled-over
-  `updatedAt` values, and invalid history timestamps; valid exported state is
-  still accepted.
-- Chromium coverage submits the verifier's semantic-invalid import, asserts no
-  destructive confirmation appears, and reloads to prove the original $50
-  IndexedDB plan remains intact.
-- Chromium coverage seeds a legacy unreadable IndexedDB record and proves the
-  new recovery action clears it through the UI and survives a reload.
-- The Playwright configuration now runs every browser scenario at both
-  390×844 and 1440×1000. A keyboard check covers Enter opening the Add bill
-  dialog, initial focus on its field, Escape closing it, and focus returning
-  to the triggering button.
-
-## How to run and verify
+From a fresh clone of the committed candidate:
 
 ```sh
 npm ci
 npm test
 npm run lint
 npm run build
+# Every test command in .factory/claims.json was run separately.
 npm run test:e2e
 ```
 
-Evidence from a clean install on 2026-08-28:
+Results:
 
-- `npm ci` completed with `npm audit` reporting **0 vulnerabilities**.
-- `npm test`: **6/6** Vitest tests passed.
-- `npm run lint`: TypeScript `--noEmit` passed.
-- `npm run build`: passed and created `dist/index.html`; initial JS is
-  **32.33 KB** (**10.59 KB gzip**) and CSS is **16.85 KB** (**4.57 KB gzip**),
-  well within the 200 KB / 50 KB static budgets. The hero AVIF/WebP are
-  12.15 KB / 14.29 KB.
-- `npm run test:e2e`: **14/14** Chromium checks passed across mobile-390 and
-  desktop. This includes full calculation, encrypted backup round trip,
-  actual `context.setOffline(true)` saved-plan reload, Axe serious/critical
-  scans on landing/dashboard/legal pages, no console/page errors, the import
-  data-loss regression, legacy recovery, and keyboard dialog behavior.
-- `/opt/fleet/lib/verify-url.sh` against the fresh production build returned
-  HTTP 200 in 617 ms with no console errors; it found a title, `lang="en"`,
-  one h1, one main landmark, and zero images missing alt text or unlabeled
-  buttons.
-- The app shell, manifest, icon set, and versioned service worker were rebuilt
-  and the offline test registered the worker before reloading offline. The
-  existing update-toast / `SKIP_WAITING` implementation is unchanged by this
-  repair.
-- Privacy/source review found no analytics, CDN assets, remote fonts, or bank
-  calls. The only remote endpoint in the bundle is the documented Sociobot
-  license verification endpoint, reached only after a person supplies a Plus
-  license. The live pre-deploy response-policy check returned HSTS,
-  `nosniff`, and strict referrer policy; CSP, Permissions-Policy, and immutable
-  asset headers remain hosting-level hardening gaps, not application changes.
-- A local Lighthouse mobile run was attempted with Chromium 1208. Its trace
-  processor returned `NO_LCP` and did not emit category scores (the same
-  environment limitation noted by the prior handoff); the byte budgets,
-  Playwright Axe checks, and local browser smoke check above completed.
+- `npm ci`: 0 vulnerabilities.
+- `npm test`: 6/6 passed.
+- `npm run lint`: passed.
+- `npm run build`: passed; `dist/index.html` and all route shells were created.
+- Every one of the 26 claim commands: passed from the clean clone.
+- `npm run test:e2e`: 46/46 passed across 390×844 and 1440×1000.
+- Axe: zero serious or critical findings on landing, demo, privacy, terms, and 404.
+- Reduced motion, 200% text, touch layout, dialog focus, and route focus passed.
+- Offline: seeded `/demo/` reloaded with `$60.00` after the browser context went offline.
+- Privacy: the editable demo flow made only same-origin requests. No analytics, ads, bank, or account request occurred.
+- Production JS: 40.37 KB raw / 13.05 KB gzip. CSS: 19.87 KB raw / 5.15 KB gzip.
+- Lighthouse mobile, live: performance 100, accessibility 100, best practices 100, SEO 100; FCP 0.9 s, LCP 1.1 s, CLS 0, TBT 10 ms.
+- `verify-url.sh`, live home and demo: HTTP 200, one H1, one main, `lang=en`, complete alt/button names, zero console errors.
+- Live routes: home/demo/privacy/terms return 200; an unknown route returns 404 and renders the designed page.
+- Live headers: CSP and Permissions-Policy present; manifest uses `application/manifest+json`; hashed JS uses one-year immutable caching.
+- SHA-256: app shell, JS, CSS, service worker, manifest, demo, privacy, terms, and 404 all match `dist/`.
 
-## Deployment and remaining notes
+Evidence is in [.factory/evidence](evidence), including cold mobile and desktop screenshots, header captures, hashes, verifier reports, and Lighthouse JSON.
 
-Deploy command: `npm run build`; artifact: static `dist/` with `index.html` at
-its root. The factory worker's `static` deployment step uploads this artifact
-to `daily-safe-to-spend.sociobot.in`; the live identity/hash check must be
-repeated after that deployment settles.
-
-No behavior from the researched brief was removed. The remaining documented
-non-blocking hosting-header hardening is outside this repository's static
-artifact scope. No other known release blockers remain.
-
----
-
-# Builder handoff (historical; superseded by the repair above)
-
-Work order: `daily-safe-to-spend-build-1`
-Completed: 2026-08-27
-
-## What was built
-
-- A complete manual safe-to-spend workflow: current spendable cash, payday,
-  unpaid/paid/overdue bills, protected pots, and a conservative daily amount.
-- A transparent formula and a non-destructive planned-purchase check that
-  distinguishes “fits the protected plan” from “fits today’s pace.”
-- IndexedDB persistence, balance history, JSON import/export, CSV export, and
-  specific confirmation before destructive changes.
-- A US$12 one-time Today Money Plus unlock using the Sociobot checkout and
-  verify contract, including return-token capture, daily verdict caching,
-  offline optimistic unlock, pasted-license restore, and AES-256-GCM encrypted
-  backup/restore with PBKDF2 (250,000 iterations). Core export remains free.
-- Installable offline PWA assets: 192/512/maskable icons, versioned precache,
-  cache-first static assets, network-first navigation/API behavior, offline
-  fallback, update toast, and a first-install lifecycle that does not reload
-  the user’s page.
-- Responsive blueprint-drafting visual system, hand-authored SVG iconography,
-  and an original generated wallet/compass hero in AVIF and WebP. Full prompt
-  and provenance are in `.factory/design.md` and `assets/src/`.
-- First-class onboarding, empty lists, invalid import/storage errors, expired
-  payday warning, shortfall state, offline/online state, and keyboard-accessible
-  native dialogs.
-- Static `/privacy/` and `/terms/` pages, README, MIT license, robots, sitemap,
-  and no analytics, runtime CDN, remote font, or bank integration.
-
-## Run and deploy
+## Deploy
 
 ```sh
-npm ci
-npm test
-npm run build
-npm run test:e2e
+npm ci && npm test && npm run build
+/opt/fleet/lib/deploy-static.sh daily-safe-to-spend dist
 ```
 
-The exact deploy build command is `npm run build`. Output is `dist/`, and
-`dist/index.html` is at that root. Serve `dist/` over HTTPS.
+Azure deployment completed successfully. A cold post-deploy browser check covered demo isolation/reset, `?demo=1`, real-plan separation, route focus, legal routes, HTTP 404, Axe, and offline reload.
 
-## Verification
+## Known gaps
 
-- `npm test`: 4/4 calculation and import-validation unit tests passed.
-- `npm run test:e2e`: 4/4 Chromium tests passed at 390×844, covering the full
-  plan flow, purchase decision, IndexedDB persistence, actual offline reload,
-  landing/legal accessibility, no console/page errors, and an encrypted Plus
-  backup round trip.
-- Axe via Playwright: zero serious or critical issues on onboarding, populated
-  planner, privacy, and terms screens.
-- `npm audit`: zero vulnerabilities.
-- Production sizes: 31.19 KB JS (10.25 KB gzip), 16.70 KB CSS (4.54 KB gzip),
-  12.15 KB AVIF hero, 14.29 KB WebP hero; no font payload.
-- Lighthouse 13 mobile run: accessibility 100, best practices 100, SEO 100,
-  FCP 0.9 s, Speed Index 0.9 s, CLS 0. A separate Chromium PerformanceObserver
-  smoke measurement recorded the H1 LCP at 120 ms on an unthrottled local run.
-- Visual review completed at 390×844 and 1440×1000. Touch controls are at least
-  44 px, focus styling is visible, one H1 and one main landmark are present,
-  and reduced-motion replaces transitions/animations with instant states.
+None within the reviewed product scope. No TODOs or deferred findings remain.
 
-## Known gaps and release notes
-
-- The factory still needs to register `daily-safe-to-spend` with the Sociobot
-  billing API before live checkout can complete. No product ID is hardcoded.
-- Lighthouse’s local Chromium 145 trace processor returned `NO_LCP`, so it did
-  not emit a composite performance score even though its FCP/Speed Index/CLS
-  audits completed and an independent PerformanceObserver captured LCP. All
-  shipped byte budgets are far below their limits; rerun Lighthouse in the
-  deployment browser to record the composite score.
-- Single currency per plan is intentional v1 scope. There is no cloud sync or
-  password recovery; losing an encrypted-backup password is permanent.
-
-## Suggested next steps
-
-1. Register the product slug and confirm checkout/return URL in staging with
-   Sociobot’s test card, then switch the factory base URL at release if needed.
-2. Run the deployed URL through the factory `verify-url.sh` and Lighthouse in
-   its standard deployment image.
-3. Pilot with manual budgeters and measure weekly balance updates and purchase
-   prediction accuracy, matching the brief’s success measure.
+The Sociobot product is not enabled for checkout yet, so the interface states that purchases are closed and does not ship a dead buy link. Existing license restore and encrypted-backup behavior remain tested.

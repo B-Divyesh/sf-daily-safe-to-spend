@@ -22,7 +22,8 @@ Audited 2026-08-28. Counts treat hyphenated terms and visible prices as one word
 | It does not connect to banks, predict income, or give financial advice. | 12 | Pass |
 | Your budget stays in this browser. | 6 | Pass |
 | No analytics or advertising tools receive it. | 7 | Pass |
-| Today Money Plus costs US$12 once. | 6 | Pass |
+| The planned Today Money Plus price is US$12 once. | 9 | Pass |
+| Purchases are not open yet. | 5 | Pass |
 | It adds password-protected backup and restore. | 6 | Pass |
 | The daily plan and ordinary exports stay free. | 8 | Pass |
 | See a daily amount after bills and protected money. | 9 | Pass |
@@ -37,7 +38,7 @@ Audited 2026-08-28. Counts treat hyphenated terms and visible prices as one word
 | See a daily amount until payday. | 6 | Pass |
 | Check a purchase before you make it. | 7 | Pass |
 | The core planner is free. | 5 | Pass |
-| Today Money Plus costs US$12 once. | 6 | Pass |
+| The planned Plus price is US$12 once. | 7 | Pass |
 | Plus adds password-protected backup and restore. | 6 | Pass |
 | Today Money does not connect to banks or give financial advice. | 10 | Pass |
 | Budget data stays in this browser. | 6 | Pass |

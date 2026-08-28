@@ -178,8 +178,9 @@ test("@claim:price-one-time @claim:encrypted-backup shows the price and encrypts
   expect(packed.format).toBe("today-money-encrypted-v1");
   expect(JSON.stringify(packed)).not.toContain('"balance":1240');
   await page.getByRole("link", { name: "Today Money home" }).click();
-  await expect(page.getByText("Today Money Plus costs US$12 once.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Buy Plus — $12 once" })).toHaveAttribute("href", "https://api.sociobot.in/api/v1/products/daily-safe-to-spend/checkout");
+  await expect(page.getByText("The planned Today Money Plus price is US$12 once.")).toBeVisible();
+  await expect(page.getByText("Purchases are not open yet.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Buy Plus/ })).toHaveCount(0);
 });
 
 test("@claim:keyboard-flow supports Tab, Enter, Escape, and focus return", async ({ page }) => {
