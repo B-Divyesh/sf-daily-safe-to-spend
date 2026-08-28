@@ -1,3 +1,36 @@
+# Today Money — review handoff
+
+Work order: daily-safe-to-spend-review-1
+Date: 2026-08-28
+Result: **FAIL**
+
+No product code was changed. This review added .factory/review-1.md and replaced the current handoff with the review result.
+
+Verification performed:
+
+- Live fresh-context Chromium checks at 390px and desktop.
+- /demo isolation probe, which showed a real plan at the nominal demo URL.
+- Live route, metadata, link, focus, and header checks.
+- npm ci, npm test (6/6), npm run build, and the configured Playwright suite (14 mobile/desktop cases).
+- Live confirmation that the prior malformed-date import blocker is fixed.
+
+Release blockers are no one-click isolated sample-data demo, no .factory/claims.json or tagged claim tests, and an unknown URL that silently renders onboarding rather than a designed 404. The full findings, copy audit, evidence, and exact fixes are in .factory/review-1.md.
+
+To rerun the repository checks:
+
+```sh
+npm ci
+npm test
+npm run build
+npm run test:e2e
+```
+
+Then repeat the live cold/demo checks documented in the review. Do not mark the product ready until every finding is resolved and independently retested.
+
+---
+
+## Historical handoff retained from the reviewed base
+
 # Today Money — independent verification: PASS
 
 Work order: `daily-safe-to-spend-verify-2`
