@@ -430,8 +430,11 @@ function updatePurchaseAnswer(): void {
 async function persist(message: string): Promise<void> {
   if (!state) return;
   state.updatedAt = new Date().toISOString();
+  root.inert = true;
+  root.setAttribute("aria-busy", "true");
   try { await saveBudget(state, isDemo); dashboardView(); showToast(message); }
   catch (error) { showToast(error instanceof Error ? error.message : "Your change could not be saved.", "error"); }
+  finally { root.inert = false; root.removeAttribute("aria-busy"); }
 }
 
 function download(content: BlobPart, filename: string, type: string): void {

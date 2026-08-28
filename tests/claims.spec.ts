@@ -183,6 +183,7 @@ test("@claim:core-free keeps the core workflow and ordinary exports free", async
   await page.getByRole("button", { name: "Update balance" }).click();
   await page.getByLabel("Spendable cash right now").fill("1250");
   await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator(".measurements").getByText("$1,250.00", { exact: true })).toBeVisible();
   await page.getByLabel("Purchase amount").fill("40");
   await expect(page.getByText("Yes, it fits.")).toBeVisible();
 
