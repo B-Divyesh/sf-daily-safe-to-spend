@@ -1,0 +1,12 @@
+{
+  "valid": {
+    "valid": true,
+    "reason": "ok",
+    "expires_at": null
+  },
+  "invalid": {
+    "valid": false,
+    "reason": "invalid",
+    "expires_at": null
+  }
+}

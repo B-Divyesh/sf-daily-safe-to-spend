@@ -1,6 +1,18 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
+interface LicenseFixture {
+  valid: boolean;
+  reason: "ok" | "invalid";
+  expires_at: null;
+}
+
+const licenseResponses = JSON.parse(
+  await readFile(new URL("./fixtures/license-responses.json", import.meta.url), "utf8"),
+) as { valid: LicenseFixture; invalid: LicenseFixture };
+const licenseKey = "sb_license:daily-safe-to-spend";
+const verdictKey = `${licenseKey}:verdict`;
+
 function isoInDays(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() + days);
@@ -200,13 +212,61 @@ test("@claim:core-free keeps the core workflow and ordinary exports free", async
   expect(requests).toEqual([]);
 });
 
+test("@claim:license-restore verifies valid, invalid, failed, and offline cached states through the visible form", async ({ page, context }) => {
+  let response: "valid" | "invalid" | "failure" = "invalid";
+  const verificationRequests: string[] = [];
+  await page.route("https://api.sociobot.in/api/v1/products/daily-safe-to-spend/verify?*", async (route) => {
+    verificationRequests.push(route.request().url());
+    if (response === "failure") return route.abort("connectionfailed");
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(licenseResponses[response]) });
+  });
+
+  await page.getByLabel("Have a license? Paste it here").fill("recorded-invalid-license");
+  await page.getByRole("button", { name: "Verify license" }).click();
+  await expect(page.locator(".license-note")).toContainText("License no longer active.");
+  await expect(page.getByText("PLUS UNLOCKED", { exact: true })).toHaveCount(0);
+  const invalidVerdict = JSON.parse((await page.evaluate((key) => localStorage.getItem(key), verdictKey))!);
+  expect(invalidVerdict.valid).toBe(false);
+  expect(invalidVerdict.checkedAt).toEqual(expect.any(Number));
+
+  response = "failure";
+  await page.getByLabel("Have a license? Paste it here").fill("network-failure-license");
+  await page.getByRole("button", { name: "Verify license" }).click();
+  await expect(page.locator(".license-note")).toContainText("Could not verify the license. Check your connection and try again.");
+  await expect(page.getByText("PLUS UNLOCKED", { exact: true })).toHaveCount(0);
+  expect(await page.evaluate((key) => localStorage.getItem(key), verdictKey)).toBeNull();
+
+  response = "valid";
+  await page.getByLabel("Have a license? Paste it here").fill("offline-cached-license");
+  await page.getByRole("button", { name: "Verify license" }).click();
+  await expect(page.getByText("PLUS UNLOCKED", { exact: true })).toBeVisible();
+  await expect(page.locator(".license-note").getByText("Plus unlocked on this device.", { exact: true })).toBeVisible();
+  expect(new URL(verificationRequests[0]!).searchParams.get("license")).toBe("recorded-invalid-license");
+  expect(new URL(verificationRequests[1]!).searchParams.get("license")).toBe("network-failure-license");
+  expect(new URL(verificationRequests[2]!).searchParams.get("license")).toBe("offline-cached-license");
+  expect(await page.evaluate((key) => localStorage.getItem(key), licenseKey)).toBe("offline-cached-license");
+  const validVerdict = JSON.parse((await page.evaluate((key) => localStorage.getItem(key), verdictKey))!);
+  expect(validVerdict.valid).toBe(true);
+  expect(validVerdict.checkedAt).toEqual(expect.any(Number));
+  await page.keyboard.press("Tab");
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expect(page.getByText("PLUS UNLOCKED", { exact: true })).toBeVisible();
+  const requestCountBeforeOffline = verificationRequests.length;
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByText("PLUS UNLOCKED", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Download encrypted backup" })).toBeVisible();
+  expect(verificationRequests).toHaveLength(requestCountBeforeOffline);
+});
+
 async function unlockFixture(page: Page): Promise<void> {
   await page.evaluate(() => {
     localStorage.setItem("sb_license:daily-safe-to-spend", "claim-fixture-license");
     localStorage.setItem("sb_license:daily-safe-to-spend:verdict", JSON.stringify({ valid: true, checkedAt: Date.now() }));
   });
   await page.reload();
-  await expect(page.getByText("PLUS UNLOCKED")).toBeVisible();
+  await expect(page.getByText("PLUS UNLOCKED", { exact: true })).toBeVisible();
 }
 
 async function newRestorePage(browser: Browser): Promise<{ page: Page; close: () => Promise<void> }> {
@@ -260,6 +320,60 @@ test("@claim:encrypted-backup creates and restores an encrypted plan in a fresh 
   } finally {
     await restore.close();
   }
+});
+
+test("@claim:encrypted-backup-local-privacy keeps the password, backup, and budget local", async ({ page }) => {
+  const requests: Array<{ url: string; method: string; body: string | null }> = [];
+  page.on("request", (request) => requests.push({
+    url: request.url(),
+    method: request.method(),
+    body: request.postData(),
+  }));
+  await page.route("https://api.sociobot.in/api/v1/products/daily-safe-to-spend/verify?*", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(licenseResponses.valid) });
+  });
+
+  await page.getByLabel("Have a license? Paste it here").fill("privacy-fixture-license");
+  await page.getByRole("button", { name: "Verify license" }).click();
+  await expect(page.getByText("PLUS UNLOCKED", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Update balance" }).click();
+  await page.getByLabel("Spendable cash right now").fill("1375");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator(".measurements").getByText("$1,375.00", { exact: true })).toBeVisible();
+  await page.getByLabel("Backup password").fill("private-claim-password");
+  const pending = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download encrypted backup" }).click();
+  const backupPath = await (await pending).path();
+  expect(backupPath).not.toBeNull();
+  const packedText = await readFile(backupPath!, "utf8");
+  expect(packedText).not.toContain("private-claim-password");
+  expect(packedText).not.toContain('"balance":1375');
+  expect(packedText).not.toContain("Rent share");
+
+  await page.getByRole("button", { name: "Update balance" }).click();
+  await page.getByLabel("Spendable cash right now").fill("100");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator(".measurements").getByText("$100.00", { exact: true }).first()).toBeVisible();
+  await page.getByLabel("Restore password").fill("private-claim-password");
+  await page.locator("#encrypted-file").setInputFiles(backupPath!);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Restore encrypted backup" }).click();
+  await expect(page.locator(".measurements").getByText("$1,375.00", { exact: true })).toBeVisible();
+
+  const external = requests.filter((request) => new URL(request.url).origin !== "http://127.0.0.1:4173");
+  expect(external).toHaveLength(1);
+  const verification = new URL(external[0]!.url);
+  expect(verification.origin).toBe("https://api.sociobot.in");
+  expect(verification.pathname).toBe("/api/v1/products/daily-safe-to-spend/verify");
+  expect([...verification.searchParams.keys()]).toEqual(["license"]);
+  expect(verification.searchParams.get("license")).toBe("privacy-fixture-license");
+  expect(external[0]!.method).toBe("GET");
+  expect(external[0]!.body).toBeNull();
+  const transmitted = requests.map((request) => `${request.url}\n${request.body ?? ""}`).join("\n");
+  expect(transmitted).not.toContain("private-claim-password");
+  expect(transmitted).not.toContain('"balance":1375');
+  expect(transmitted).not.toContain("Rent share");
 });
 
 test("@claim:keyboard-flow supports Tab, Enter, Escape, and focus return", async ({ page }) => {

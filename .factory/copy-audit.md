@@ -1,6 +1,6 @@
 # Today Money copy audit
 
-Audited 2026-08-28 from the rendered landing page and `README.md` after polish round 2.
+Audited 2026-08-28 from the rendered landing page and `README.md` after polish round 3.
 
 Counting rule: whitespace-separated words count once. Hyphenated terms, prices, URLs, paths, and inline-code values each count as one word. Punctuation and decorative arrows do not count. The inventory includes directives, headings, labels, actions, prose, and sentence-like list items. No item exceeds 22 words or contains a banned marketing term.
 
@@ -55,7 +55,7 @@ Counting rule: whitespace-separated words count once. Hyphenated terms, prices, 
 | Built by Param Factory | 4 | Attribution |
 | Original generated illustration | 3 | Provenance disclosure |
 
-Short brand, navigation, and footer labels are also inventoried: “Today Money” (2), “DAILY SPENDING PLAN” (3), “Demo” (1), “Privacy” (1), “Terms” (1), “Install app” (2), and “Build 1.2.0-polish-2” (2). All pass.
+Short brand, navigation, and footer labels are also inventoried: “Today Money” (2), “DAILY SPENDING PLAN” (3), “Demo” (1), “Privacy” (1), “Terms” (1), “Install app” (2), and “Build 1.3.0-polish-3” (2). All pass.
 
 ## README sentences and list items
 

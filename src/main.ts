@@ -17,7 +17,7 @@ let installPrompt: BeforeInstallPromptEvent | null = null;
 let isDemo = false;
 
 const SITE_URL = "https://daily-safe-to-spend.sociobot.in";
-const BUILD_ID = "1.2.0-polish-2";
+const BUILD_ID = "1.3.0-polish-3";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -215,7 +215,7 @@ function renderHistory(current: BudgetState): string {
 
 function renderPlus(): string {
   if (license.unlocked) return `<section class="plus-section is-unlocked" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">PLUS UNLOCKED</span><h2 id="plus-title">Encrypted portable backup</h2><p>Create a password-protected copy for another device. We never receive the file or password.</p></div><div class="backup-grid"><form id="encrypt-form"><label for="backup-password">Backup password <span>8+ characters</span></label><input id="backup-password" name="password" type="password" minlength="8" required autocomplete="new-password" /><button class="button button-primary" type="submit">Download encrypted backup</button></form><form id="decrypt-form"><label for="restore-password">Restore password</label><input id="restore-password" name="password" type="password" minlength="8" required autocomplete="current-password" /><label class="button button-outline file-button">Choose encrypted backup<input id="encrypted-file" type="file" accept="application/json,.tmbackup" required /></label><button class="button button-outline" type="submit">Restore encrypted backup</button></form></div><p class="license-note">${license.notice || "License verified for this device."}</p></section>`;
-  return `<section class="plus-section" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">ONE-TIME PURCHASE</span><h2 id="plus-title">Take an encrypted copy with you</h2><p><strong>The planned Today Money Plus price is US$12 once.</strong> Add password-protected backup and restore across your own devices. The daily plan and ordinary downloads stay free.</p></div><div class="plus-actions"><p class="availability-note"><strong>Purchases are not open yet.</strong> Existing license holders can restore access below.</p><form id="license-form"><label for="license-token">Have a license? Paste it here</label><div class="inline-form"><input id="license-token" name="license" type="text" required autocomplete="off" spellcheck="false" /><button class="button button-outline" type="submit">Verify license</button></div></form></div><p class="license-note">${license.checking ? "Checking license…" : escapeHtml(license.notice)} Sociobot/Dodo is the merchant of record. <a href="/terms" data-route>Refund terms</a>.</p></section>`;
+  return `<section class="plus-section" aria-labelledby="plus-title"><div class="plus-heading"><span class="plus-badge">PLANNED ONE-TIME PURCHASE</span><h2 id="plus-title">Take an encrypted copy with you</h2><p><strong>The planned Today Money Plus price is US$12 once.</strong> Add password-protected backup and restore across your own devices. The daily plan and ordinary downloads stay free.</p></div><div class="plus-actions"><p class="availability-note"><strong>Purchases are not open yet.</strong> Existing license holders can restore access below.</p><form id="license-form"><label for="license-token">Have a license? Paste it here</label><div class="inline-form"><input id="license-token" name="license" type="text" required autocomplete="off" spellcheck="false" /><button class="button button-outline" type="submit">Verify license</button></div></form></div><p class="license-note">${license.checking ? "Checking license…" : escapeHtml(license.notice)} <a href="/terms" data-route>Read the planned purchase terms</a>.</p></section>`;
 }
 
 function dateInDays(days: number): string {
@@ -250,7 +250,7 @@ function legalView(kind: "privacy" | "terms"): void {
   root.innerHTML = shell(`<main id="main" class="legal-view"><p class="eyebrow">${privacy ? "PRIVACY" : "TERMS"} SHEET / 2026-08-28</p><h1 tabindex="-1">${privacy ? "Your money stays yours" : "A planning tool, not financial advice"}</h1>${privacy ? `
     <p>Today Money works without an account, analytics, advertising, bank connection, or cloud budget storage.</p>
     <h2>What this browser stores</h2><p>Your balance, payday, bills, protected money, and balance history stay in this browser. A Plus license is stored only after you provide one.</p>
-    <h2>What leaves this device</h2><p>Your budget is not transmitted. Buying or verifying Plus contacts Sociobot’s billing service. It sends the license, not your budget.</p>
+    <h2>What leaves this device</h2><p>Your budget is not transmitted. Verifying an existing Plus license contacts Sociobot’s billing service. It sends the license, not your budget.</p>
     <h2>Demo data</h2><p>The demo uses a separate browser database. Reset demo or Start for real clears that sample database.</p>
     <h2>Exports and deletion</h2><p>Spreadsheet, backup, and encrypted backup files are created here. You choose where to save them. Erase local plan removes the budget.</p>
     <h2>Contact</h2><p>Email <a href="mailto:privacy@sociobot.in">privacy@sociobot.in</a> with privacy questions.</p>` : `
