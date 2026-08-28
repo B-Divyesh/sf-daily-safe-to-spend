@@ -1,29 +1,57 @@
-# Today Money — review 5 handoff
+# Today Money — polish 5 handoff
 
-Work order: `daily-safe-to-spend-review-5`
+Work order: `daily-safe-to-spend-polish-5`
+Deployment: <https://daily-safe-to-spend.sociobot.in>
+SWA deployment: `a3f661de-9e0b-452e-8933-f900392ebb98`
 
 ## Outcome
 
-Review only; no product code was changed. The result is **FAIL** because the
-landing and README say offline use works after the first visit, while a fresh
-no-interaction visit has no registered service worker and cannot reload offline.
-See `F-5-1` in [review-5.md](review-5.md).
+Closed the last adversarial finding, `F-5-1`. The service worker now registers
+on initial page load, claims initial clients on activation, and serves
+precached same-origin assets despite host `Vary` headers. A fresh browser can
+open `/demo`, make no pointer or keyboard input, go offline, reload, and see
+the seeded `$60.00` plan.
+
+The repair is in `8f3d00d` and `b96bb21`; evidence and documentation are in
+`fe8e1c7`. All commits are pushed to `origin/main`.
 
 ## Verification
 
-- Fresh clone: `npm ci`, `npm test` (6/6), `npm run lint`, `npm run build`, and
-  every one of the 29 literal claim commands from `.factory/claims.json`
-  passed.
-- Live cold 390px and desktop checks confirmed the first-read path, demo
-  sample, reset, real/demo isolation, same-origin demo flow, metadata,
-  headers, routes, links, 404, focus restoration, and zero serious/critical
-  Axe findings.
-- The interacted-with offline path passed. The no-interaction live path failed:
-  no registration/controller after first load, then
-  `net::ERR_INTERNET_DISCONNECTED` on reload.
+- Local: `npm test` passed 6/6; `npm run lint` and `npm run build` passed.
+  Production JavaScript is 13.26 KB gzip.
+- Browser suite: `npm run test:claims` passed 19 Playwright tests (29 claim
+  tags); `npm run test:e2e` passed 54 mobile/desktop browser and Axe tests.
+- Clean clone: at `/tmp/today-money-polish-5.er3jCW`, `npm ci`, build, and all
+  29 literal commands from `.factory/claims.json` passed. Details:
+  `evidence/polish-5-clean-clone.md`.
+- Local Lighthouse mobile `/demo`: performance 100, accessibility 100, best
+  practices 100, SEO 100; LCP 1.2 s and CLS 0. See
+  `evidence/polish-5-lighthouse-local.json`.
+- Local first-visit offline replay: no pointer/keyboard input, active
+  controller, `$60.00`, and no console errors. Screenshot:
+  `evidence/polish-5-local-offline.png`.
+- Live cold checks passed for `/`, `/demo`, `/privacy`, `/terms`, and the real
+  404. `verify-url.sh` evidence is under `evidence/polish-5-live-*`.
+- Live Playwright Axe scan found zero serious or critical violations on all
+  five routes. Metadata, link crawl, route focus/announcement, demo isolation,
+  headers, and the no-input offline replay are recorded in
+  `evidence/polish-5-live-accessibility.json`,
+  `evidence/polish-5-live-metadata.json`,
+  `evidence/polish-5-live-link-crawl.json`,
+  `evidence/polish-5-live-route-focus.json`,
+  `evidence/polish-5-live-demo-isolation.json`, and
+  `evidence/polish-5-live-offline.png`.
 
-## Next step
+## Run and deploy
 
-Register the service worker on first load and add a claim test that reloads a
-fresh `/demo` offline without pointer or keyboard interaction. Re-run the full
-review after deployment.
+```sh
+npm ci
+npm test
+npm run lint
+npm run build
+npm run test:claims
+npm run test:e2e
+```
+
+Deploy the built `dist/` directory with the factory static deployment work
+order. No product gaps are known.

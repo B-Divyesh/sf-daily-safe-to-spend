@@ -1,0 +1,34 @@
+[
+  {
+    "href": "#main",
+    "status": "explicit"
+  },
+  {
+    "href": "/",
+    "url": "https://daily-safe-to-spend.sociobot.in/",
+    "status": 200
+  },
+  {
+    "href": "/demo",
+    "url": "https://daily-safe-to-spend.sociobot.in/demo",
+    "status": 200
+  },
+  {
+    "href": "/privacy",
+    "url": "https://daily-safe-to-spend.sociobot.in/privacy",
+    "status": 200
+  },
+  {
+    "href": "/terms",
+    "url": "https://daily-safe-to-spend.sociobot.in/terms",
+    "status": 200
+  },
+  {
+    "href": "mailto:privacy@sociobot.in",
+    "status": "explicit"
+  },
+  {
+    "href": "mailto:support@sociobot.in",
+    "status": "explicit"
+  }
+]

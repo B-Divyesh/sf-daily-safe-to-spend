@@ -1,0 +1,47 @@
+{
+  "/": {
+    "title": "Today Money — see what you can spend today",
+    "h1": [
+      "See what you can spend today"
+    ],
+    "seriousOrCritical": []
+  },
+  "/demo": {
+    "title": "Demo — Today Money",
+    "h1": [
+      "Your demo daily amount"
+    ],
+    "seriousOrCritical": []
+  },
+  "/privacy": {
+    "title": "Privacy — Today Money",
+    "h1": [
+      "Your money stays yours"
+    ],
+    "seriousOrCritical": []
+  },
+  "/terms": {
+    "title": "Terms — Today Money",
+    "h1": [
+      "A planning tool, not financial advice"
+    ],
+    "seriousOrCritical": []
+  },
+  "/this-page-is-missing": {
+    "title": "Page not found — Today Money",
+    "h1": [
+      "This page does not exist"
+    ],
+    "seriousOrCritical": []
+  },
+  "navigation": {
+    "privacy": {
+      "focus": "Your money stays yours",
+      "announcement": "Your money stays yours page loaded"
+    },
+    "demo": {
+      "focus": "Your demo daily amount",
+      "announcement": "Your demo daily amount page loaded"
+    }
+  }
+}

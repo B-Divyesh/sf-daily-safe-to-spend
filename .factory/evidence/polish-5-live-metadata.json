@@ -1,0 +1,52 @@
+{
+  "/": {
+    "title": "Today Money — see what you can spend today",
+    "canonical": "https://daily-safe-to-spend.sociobot.in/",
+    "description": "See a daily amount after bills and protected money, without connecting a bank.",
+    "ogTitle": "Today Money — see what you can spend today",
+    "ogImage": "https://daily-safe-to-spend.sociobot.in/social-preview.png",
+    "h1": 1,
+    "main": true,
+    "lang": "en"
+  },
+  "/demo": {
+    "title": "Demo — Today Money",
+    "canonical": "https://daily-safe-to-spend.sociobot.in/demo/",
+    "description": "Try a $1,240 daily spending plan with sample bills and protected money.",
+    "ogTitle": "Demo — Today Money",
+    "ogImage": "https://daily-safe-to-spend.sociobot.in/social-preview.png",
+    "h1": 1,
+    "main": true,
+    "lang": "en"
+  },
+  "/privacy": {
+    "title": "Privacy — Today Money",
+    "canonical": "https://daily-safe-to-spend.sociobot.in/privacy/",
+    "description": "How Today Money stores budget data in this browser and handles Plus license checks.",
+    "ogTitle": "Privacy — Today Money",
+    "ogImage": "https://daily-safe-to-spend.sociobot.in/social-preview.png",
+    "h1": 1,
+    "main": true,
+    "lang": "en"
+  },
+  "/terms": {
+    "title": "Terms — Today Money",
+    "canonical": "https://daily-safe-to-spend.sociobot.in/terms/",
+    "description": "Terms for the Today Money daily planner and one-time Plus purchase.",
+    "ogTitle": "Terms — Today Money",
+    "ogImage": "https://daily-safe-to-spend.sociobot.in/social-preview.png",
+    "h1": 1,
+    "main": true,
+    "lang": "en"
+  },
+  "/this-page-is-missing": {
+    "title": "Page not found — Today Money",
+    "canonical": "https://daily-safe-to-spend.sociobot.in/this-page-is-missing/",
+    "description": "This Today Money page does not exist.",
+    "ogTitle": "Page not found — Today Money",
+    "ogImage": "https://daily-safe-to-spend.sociobot.in/social-preview.png",
+    "h1": 1,
+    "main": true,
+    "lang": "en"
+  }
+}
