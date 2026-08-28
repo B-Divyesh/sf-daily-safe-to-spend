@@ -1,3 +1,37 @@
+# Today Money — independent verification: PASS
+
+Work order: `daily-safe-to-spend-verify-2`
+
+Verified candidate: `f9a142ae9b18080347ef6fb59b8491e6ede12c0a`
+Verified live URL: <https://daily-safe-to-spend.sociobot.in>
+Date: 2026-08-28
+
+## Unambiguous result: PASS
+
+Fresh independent QA passed the clean install, 6/6 unit tests, TypeScript check,
+exact production build, and isolated 14/14 Playwright run across 390px mobile
+and desktop. The built app and live deployment match byte-for-byte for the
+checked app shell, assets, PWA files, and legal pages. Live and local Chromium
+checks passed saved-plan offline reload, active service-worker cache,
+installability, zero console/page errors, keyboard focus, reduced motion, and
+the update-toast/skip-waiting lifecycle. Axe serious/critical findings were
+zero; the local Lighthouse run reported 100 accessibility, best practices, and
+SEO, FCP 1.0 s, CLS 0 (its performance composite was unavailable because the
+container trace returned `NO_LCP`).
+
+The complete evidence and exact commands are in
+`.factory/verification-2.md`.
+
+## Known non-blocking deployment follow-up
+
+The live host uses `max-age=30` rather than immutable cache directives for
+hashed assets and omits CSP and Permissions-Policy. It also serves the manifest
+as `application/octet-stream`; Chromium still reports zero installability
+errors. These are P2 hosting hardening/configuration items, not product-code
+or functional blockers. The versioned cache-first service worker works offline.
+
+---
+
 # Today Money — repair handoff: ready to deploy
 
 Work order: `daily-safe-to-spend-repair-1`
