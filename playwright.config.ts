@@ -7,6 +7,7 @@ export default defineConfig({
   retries: 1,
   use: {
     baseURL: "http://127.0.0.1:4173",
+    channel: "chromium",
     trace: "retain-on-failure",
     launchOptions: { args: ["--disable-gpu"] },
   },
