@@ -13,7 +13,7 @@ async function files(dir) {
   const nested = await Promise.all(entries.map((entry) => entry.isDirectory() ? files(join(dir, entry.name)) : [join(dir, entry.name)]));
   return nested.flat();
 }
-const assets = (await files(dist)).map((file) => `/${relative(dist, file)}`).filter((file) => file !== "/sw.js" && !file.endsWith(".map"));
+const assets = (await files(dist)).map((file) => `/${relative(dist, file)}`).filter((file) => !["/sw.js", "/404.html", "/staticwebapp.config.json"].includes(file) && !file.endsWith(".map"));
 const version = (await readFile(join(dist, "index.html"), "utf8")).match(/assets\/[^"']+/)?.[0] ?? Date.now().toString();
 const sw = `const CACHE = ${JSON.stringify(`today-money-${version}`)};
 const PRECACHE = ${JSON.stringify(assets)};
