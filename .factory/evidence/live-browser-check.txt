@@ -1,0 +1,16 @@
+Live cold-browser verification — 2026-08-28
+
+URL: https://daily-safe-to-spend.sociobot.in
+Home copy and first action: PASS
+/demo and ?demo=1 seed: PASS
+Demo banner, reset, and Start for real: PASS
+Real/demo IndexedDB isolation: PASS
+Privacy and Terms routes: PASS
+Back/Forward heading focus: PASS
+Unknown path: HTTP 404 with designed page
+Offline seeded-demo reload: PASS
+Console errors on home/demo/offline flow: 0
+Axe serious/critical across home/demo/privacy/terms/404: 0
+Broken purchase links: 0; unavailable checkout is stated in plain words
+Viewports checked: 390x844 and 1440x1000
+Live/dist SHA-256 matches: 9/9 checked files

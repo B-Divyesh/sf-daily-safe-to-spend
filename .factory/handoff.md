@@ -3,6 +3,7 @@
 Work order: `daily-safe-to-spend-polish-1`  
 Completed: 2026-08-28  
 Live: <https://daily-safe-to-spend.sociobot.in>
+Verified candidate: `ba38e985bc97bd5f74e018c251a88e12d188bca8`
 
 ## Delivered
 

@@ -1,0 +1,13 @@
+Clean clone verification — 2026-08-28
+Commit: ba38e985bc97bd5f74e018c251a88e12d188bca8
+
+npm ci: PASS, 0 vulnerabilities
+npm test: PASS, 6/6
+npm run lint: PASS
+npm run build: PASS
+Every command in .factory/claims.json: PASS, 26/26
+npm run test:e2e: PASS, 46/46 at mobile-390 and desktop
+
+The full browser suite included Axe, offline reload, import preservation,
+unreadable-plan recovery, keyboard dialogs, 200% text, reduced motion,
+demo isolation, exports/import, calculation boundaries, and route focus.
