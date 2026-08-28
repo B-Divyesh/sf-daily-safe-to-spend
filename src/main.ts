@@ -17,7 +17,7 @@ let installPrompt: BeforeInstallPromptEvent | null = null;
 let isDemo = false;
 
 const SITE_URL = "https://daily-safe-to-spend.sociobot.in";
-const BUILD_ID = "1.1.0-polish-1";
+const BUILD_ID = "1.2.0-polish-2";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -80,14 +80,14 @@ function onboardingView(): void {
     <main id="main" class="landing">
     <div class="onboarding">
       <section class="intro-copy">
-        <p class="eyebrow">DAILY AMOUNT AFTER BILLS AND SAVINGS</p>
+        <p class="eyebrow">DAILY AMOUNT AFTER BILLS AND PROTECTED MONEY</p>
         <h1 tabindex="-1">See what you can spend today</h1>
         <p class="lede">For manual budgeters who need a daily amount without connecting a bank.</p>
         <div class="first-actions"><a class="button button-primary" href="/demo" data-route>Try it with sample data</a><p>See a $1,240 plan with bills and protected money.</p></div>
         <ul class="promise-list">
           <li>${icon("check")} Works offline after your first visit</li>
           <li>${icon("check")} No bank connection or account</li>
-          <li>${icon("check")} Core plan is free; Plus costs $12 once</li>
+          <li>${icon("check")} Core plan is free; Plus is planned at $12 once</li>
         </ul>
         <picture class="hero-drawing">
           <source srcset="/assets/drafting-wallet.avif" type="image/avif" />
@@ -204,7 +204,7 @@ function renderBills(bills: Bill[], currency: CurrencyCode, payday: string): str
 }
 
 function renderEnvelopes(envelopes: Envelope[], currency: CurrencyCode): string {
-  if (!envelopes.length) return `<div class="empty-row"><span class="empty-icon">${icon("shield")}</span><div><strong>No protected money yet</strong><p>Add an emergency buffer or savings pot you do not want counted as spendable.</p></div><button class="text-button" data-action="add-envelope">Protect some money</button></div>`;
+  if (!envelopes.length) return `<div class="empty-row"><span class="empty-icon">${icon("shield")}</span><div><strong>No protected money yet</strong><p>Add emergency savings or other money you do not want counted as spendable.</p></div><button class="text-button" data-action="add-envelope">Protect some money</button></div>`;
   return `<ul class="item-list">${envelopes.map((item) => `<li class="plan-item"><span class="static-icon">${icon("shield")}</span><div class="item-copy"><strong>${escapeHtml(item.name)}</strong><span>Always protected</span></div><strong class="item-amount">${money(item.amount, currency)}</strong><div class="item-actions"><button data-action="edit-envelope" data-id="${item.id}" aria-label="Edit ${escapeHtml(item.name)}">${icon("pencil")}</button><button data-action="delete-envelope" data-id="${item.id}" aria-label="Delete ${escapeHtml(item.name)}">${icon("trash")}</button></div></li>`).join("")}</ul>`;
 }
 

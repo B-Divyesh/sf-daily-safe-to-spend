@@ -17,7 +17,7 @@ Try the isolated sample plan: <https://daily-safe-to-spend.sociobot.in/demo>
 - Imports a valid backup file.
 - Works offline after the first visit.
 
-The core planner is free. The planned Plus price is US$12 once. Plus adds password-protected backup and restore.
+The core planner and ordinary exports are free. The planned Plus price is US$12 once. Plus adds password-protected backup and restore across devices.
 
 Today Money does not connect to banks or give financial advice. Budget data stays in this browser.
 

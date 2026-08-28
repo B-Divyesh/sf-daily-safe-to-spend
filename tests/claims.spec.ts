@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 
 function isoInDays(days: number): string {
   const date = new Date();
@@ -163,24 +163,102 @@ test("@claim:installable-pwa ships a standalone manifest and active offline work
   expect(scope).toBe("http://127.0.0.1:4173/");
 });
 
-test("@claim:price-one-time @claim:encrypted-backup shows the price and encrypts a local backup", async ({ page }) => {
+test("@claim:price-one-time states the planned price consistently", async ({ page }) => {
+  await page.getByRole("link", { name: "Today Money home" }).click();
+  await expect(page.getByText("Core plan is free; Plus is planned at $12 once")).toBeVisible();
+  await expect(page.getByText("The planned Today Money Plus price is US$12 once.")).toBeVisible();
+  await expect(page.getByText("Purchases are not open yet.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Buy Plus/ })).toHaveCount(0);
+});
+
+test("@claim:core-free keeps the core workflow and ordinary exports free", async ({ page }) => {
+  const requests: string[] = [];
+  await page.route("https://api.sociobot.in/**", async (route) => {
+    requests.push(route.request().url());
+    await route.abort("blockedbyclient");
+  });
+  await expect(page.getByText("PLUS UNLOCKED")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("sb_license:daily-safe-to-spend"))).toBeNull();
+
+  await page.getByRole("button", { name: "Update balance" }).click();
+  await page.getByLabel("Spendable cash right now").fill("1250");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.getByLabel("Purchase amount").fill("40");
+  await expect(page.getByText("Yes, it fits.")).toBeVisible();
+
+  let pending = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export JSON" }).click();
+  let downloadPath = await (await pending).path();
+  expect(downloadPath).not.toBeNull();
+  expect(JSON.parse(await readFile(downloadPath!, "utf8")).balance).toBe(1250);
+  pending = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export CSV" }).click();
+  downloadPath = await (await pending).path();
+  expect(downloadPath).not.toBeNull();
+  expect(await readFile(downloadPath!, "utf8")).toContain('"balance","Current cash","1250"');
+  expect(requests).toEqual([]);
+});
+
+async function unlockFixture(page: Page): Promise<void> {
   await page.evaluate(() => {
     localStorage.setItem("sb_license:daily-safe-to-spend", "claim-fixture-license");
     localStorage.setItem("sb_license:daily-safe-to-spend:verdict", JSON.stringify({ valid: true, checkedAt: Date.now() }));
   });
   await page.reload();
   await expect(page.getByText("PLUS UNLOCKED")).toBeVisible();
+}
+
+async function newRestorePage(browser: Browser): Promise<{ page: Page; close: () => Promise<void> }> {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  await page.goto("/demo");
+  await unlockFixture(page);
+  return { page, close: () => context.close() };
+}
+
+test("@claim:encrypted-backup creates and restores an encrypted plan in a fresh context", async ({ page, browser }) => {
+  await unlockFixture(page);
+  await page.getByRole("button", { name: "Update balance" }).click();
+  await page.getByLabel("Spendable cash right now").fill("1350");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.getByRole("button", { name: "Add bill" }).first().click();
+  await page.getByLabel("Bill name").fill("Vet appointment");
+  await page.getByLabel("Amount", { exact: true }).fill("65");
+  await page.getByLabel("Due date").fill(isoInDays(2));
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Vet appointment", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Protect money" }).first().click();
+  await page.getByLabel("Name").fill("Travel home");
+  await page.getByLabel("Amount to protect").fill("80");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Travel home", { exact: true })).toBeVisible();
+
   await page.getByLabel("Backup password").fill("claim-password");
   const pending = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download encrypted backup" }).click();
-  const path = await (await pending).path();
-  const packed = JSON.parse(await readFile(path!, "utf8"));
+  const path = (await pending).path();
+  const backupPath = await path;
+  expect(backupPath).not.toBeNull();
+  const packed = JSON.parse(await readFile(backupPath!, "utf8"));
   expect(packed.format).toBe("today-money-encrypted-v1");
-  expect(JSON.stringify(packed)).not.toContain('"balance":1240');
-  await page.getByRole("link", { name: "Today Money home" }).click();
-  await expect(page.getByText("The planned Today Money Plus price is US$12 once.")).toBeVisible();
-  await expect(page.getByText("Purchases are not open yet.")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Buy Plus/ })).toHaveCount(0);
+  expect(JSON.stringify(packed)).not.toContain('"balance":1350');
+  expect(JSON.stringify(packed)).not.toContain("Vet appointment");
+
+  const restore = await newRestorePage(browser);
+  try {
+    await expect(restore.page.locator(".measurements").getByText("$1,240.00", { exact: true })).toBeVisible();
+    await restore.page.getByLabel("Restore password").fill("claim-password");
+    await restore.page.locator("#encrypted-file").setInputFiles(backupPath!);
+    restore.page.once("dialog", (dialog) => dialog.accept());
+    await restore.page.getByRole("button", { name: "Restore encrypted backup" }).click();
+    await expect(restore.page.locator(".measurements").getByText("$1,350.00", { exact: true })).toBeVisible();
+    await expect(restore.page.getByText("Vet appointment", { exact: true })).toBeVisible();
+    await expect(restore.page.getByText("Travel home", { exact: true })).toBeVisible();
+    await restore.page.reload();
+    await expect(restore.page.locator(".measurements").getByText("$1,350.00", { exact: true })).toBeVisible();
+  } finally {
+    await restore.close();
+  }
 });
 
 test("@claim:keyboard-flow supports Tab, Enter, Escape, and focus return", async ({ page }) => {
